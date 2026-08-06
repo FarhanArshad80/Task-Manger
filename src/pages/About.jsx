@@ -2,7 +2,7 @@ import React from 'react';
 import Card from '../components/ui/Card';
 import {
   BookOpen, Terminal, Code2, Layers, LayoutGrid, CheckSquare,
-  Calendar, BarChart3, TrendingUp, Sparkles, Quote, Zap
+  Calendar, BarChart3, TrendingUp, Sparkles, Quote, Zap, Activity
 } from 'lucide-react';
 
 const features = [
@@ -168,6 +168,23 @@ const About = () => {
             </p>
           </div>
         </div>
+      </Card>
+
+      {/* NEW FEATURE: System Status Badge */}
+      <Card className="flex items-center justify-between p-4 border border-emerald-500/20 bg-emerald-500/5">
+        <div className="flex items-center space-x-3">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+          </span>
+          <div className="flex items-center space-x-2">
+            <Activity className="h-4 w-4 text-emerald-500" />
+            <span className="text-xs font-medium text-slate-700 dark:text-slate-200">
+              System Health: <strong className="text-emerald-500">Operational</strong>
+            </span>
+          </div>
+        </div>
+        <span className="text-xs text-slate-400 font-mono">v1.0.0-stable</span>
       </Card>
     </div>
   );
