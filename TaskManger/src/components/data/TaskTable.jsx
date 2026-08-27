@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { AppContext } from '../../context/AppContext';
 import Badge from '../ui/Badge';
-import { Trash2 } from 'lucide-react';
+import { Trash2, ClipboardList } from 'lucide-react';
 
 const TaskTable = () => {
   const { tasks, updateTaskStatus, deleteTask } = useContext(AppContext);
@@ -25,6 +25,20 @@ const TaskTable = () => {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+          {tasks.length === 0 && (
+            <tr>
+              <td colSpan={4} className="p-10 text-center">
+                <ClipboardList className="h-8 w-8 mx-auto text-slate-300 dark:text-slate-600" />
+                <p className="mt-3 font-medium text-slate-600 dark:text-slate-300">
+                  No tasks in the queue
+                </p>
+                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                  Deploy your first objective using the form above.
+                </p>
+              </td>
+            </tr>
+          )}
+
           {tasks.map((item) => (
             <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
               <td className="p-4 font-medium max-w-xs truncate">{item.title}</td>
