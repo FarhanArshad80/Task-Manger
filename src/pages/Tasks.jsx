@@ -41,7 +41,9 @@ const Tasks = () => {
             onChange={(e) => setDeadline(e.target.value)}
             className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
           />
-          <Button type="submit">Deploy Task</Button>
+          <Button type="submit" disabled={!title.trim()}>
+            Deploy Task
+          </Button>
         </form>
       </Card>
       <Card>
