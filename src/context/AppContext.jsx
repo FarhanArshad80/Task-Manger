@@ -2,15 +2,57 @@ import React, { createContext, useState, useEffect } from 'react';
 
 export const AppContext = createContext();
 
+const TASKS_KEY = 'taskengine.tasks';
+const THEME_KEY = 'taskengine.theme';
+
+const seedTasks = [
+  { id: '1', title: 'Review system architecture', status: 'Completed', priority: 'High', date: '2026-07-18' },
+  { id: '2', title: 'Fix API context middleware bug', status: 'In Progress', priority: 'High', date: '2026-07-19' },
+  { id: '3', title: 'Draft technical project documentation', status: 'Pending', priority: 'Medium', date: '2026-07-20' },
+];
+
+// Storage can be unavailable (private mode, blocked cookies) or hold stale
+// junk, so every read falls back to the defaults rather than throwing.
+function loadTasks() {
+  try {
+    const saved = localStorage.getItem(TASKS_KEY);
+    if (!saved) return seedTasks;
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed) ? parsed : seedTasks;
+  } catch {
+    return seedTasks;
+  }
+}
+
+function loadTheme() {
+  try {
+    return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light';
+  } catch {
+    return 'light';
+  }
+}
+
 export const AppProvider = ({ children }) => {
   // Core tasks state initialization
-  const [tasks, setTasks] = useState([
-    { id: '1', title: 'Review system architecture', status: 'Completed', priority: 'High', date: '2026-07-18' },
-    { id: '2', title: 'Fix API context middleware bug', status: 'In Progress', priority: 'High', date: '2026-07-19' },
-    { id: '3', title: 'Draft technical project documentation', status: 'Pending', priority: 'Medium', date: '2026-07-20' },
-  ]);
+  const [tasks, setTasks] = useState(loadTasks);
 
-  const [theme, setTheme] = useState('light');
+  const [theme, setTheme] = useState(loadTheme);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
+    } catch {
+      // Nothing useful to do if the write is rejected — keep the app running.
+    }
+  }, [tasks]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      // Same here: a failed preference write should not break rendering.
+    }
+  }, [theme]);
 
   // Toggle app theme
   const toggleTheme = () => {
