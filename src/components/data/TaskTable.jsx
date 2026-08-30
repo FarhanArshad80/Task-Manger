@@ -6,6 +6,12 @@ import { Trash2 } from 'lucide-react';
 const TaskTable = () => {
   const { tasks, updateTaskStatus, deleteTask } = useContext(AppContext);
 
+  // 'YYYY-MM-DD' strings compare correctly as plain text, and building the
+  // key from local parts keeps "today" honest in every timezone.
+  const today = new Date().toLocaleDateString('en-CA');
+  const isOverdue = (item) =>
+    Boolean(item.deadline) && item.deadline < today && item.status !== 'Completed';
+
   // Safely moved inside the component block
   const getBadgeVariant = (statusFlag) => {
     if (statusFlag === 'Completed') return 'success';
@@ -19,7 +25,8 @@ const TaskTable = () => {
         <thead>
           <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 uppercase text-xs font-semibold">
             <th className="p-4">Task Description</th>
-            <th className="p-4">Target Date</th>
+            <th className="p-4">Created</th>
+            <th className="p-4">Due</th>
             <th className="p-4">Status Flag</th>
             <th className="p-4 text-right">Actions</th>
           </tr>
@@ -29,6 +36,23 @@ const TaskTable = () => {
             <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
               <td className="p-4 font-medium max-w-xs truncate">{item.title}</td>
               <td className="p-4 font-mono text-slate-500">{item.date}</td>
+              <td className="p-4 font-mono">
+                {item.deadline ? (
+                  <span
+                    className={
+                      isOverdue(item)
+                        ? 'text-rose-500 font-semibold'
+                        : 'text-slate-500'
+                    }
+                    title={isOverdue(item) ? 'Past its due date' : undefined}
+                  >
+                    {item.deadline}
+                    {isOverdue(item) && ' · overdue'}
+                  </span>
+                ) : (
+                  <span className="text-slate-400">—</span>
+                )}
+              </td>
               <td className="p-4">
                 <div className="flex items-center space-x-2">
                   <select
