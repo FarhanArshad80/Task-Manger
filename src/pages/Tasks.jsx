@@ -8,6 +8,7 @@ const Tasks = () => {
   const { addTask } = useContext(AppContext);
   const [title, setTitle] = useState('');
   const [deadline, setDeadline] = useState('');
+  const [priority, setPriority] = useState('Medium');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -15,12 +16,13 @@ const Tasks = () => {
     addTask({
       title,
       status: 'Pending',
-      priority: 'Medium',
+      priority,                                      // drives Calendar colours and the urgent count
       date: new Date().toISOString().split('T')[0], // created date
       deadline: deadline || null,                    // due date, shown on Calendar
     });
     setTitle('');
     setDeadline('');
+    setPriority('Medium');
   };
 
   return (
@@ -41,6 +43,18 @@ const Tasks = () => {
             onChange={(e) => setDeadline(e.target.value)}
             className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
           />
+          <select
+            value={priority}
+            onChange={(e) => setPriority(e.target.value)}
+            aria-label="Task priority"
+            className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+          >
+            {['Low', 'Medium', 'High'].map((level) => (
+              <option key={level} value={level} className="bg-white dark:bg-slate-800">
+                {level} priority
+              </option>
+            ))}
+          </select>
           <Button type="submit" disabled={!title.trim()}>
             Deploy Task
           </Button>

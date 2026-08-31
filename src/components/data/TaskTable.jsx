@@ -19,6 +19,12 @@ const TaskTable = () => {
     return 'danger';
   };
 
+  const priorityStyle = {
+    High: 'text-rose-500',
+    Medium: 'text-amber-500',
+    Low: 'text-emerald-500',
+  };
+
   return (
     <div className="overflow-x-auto w-full">
       <table className="w-full text-left border-collapse text-sm">
@@ -27,6 +33,7 @@ const TaskTable = () => {
             <th className="p-4">Task Description</th>
             <th className="p-4">Created</th>
             <th className="p-4">Due</th>
+            <th className="p-4">Priority</th>
             <th className="p-4">Status Flag</th>
             <th className="p-4 text-right">Actions</th>
           </tr>
@@ -52,6 +59,15 @@ const TaskTable = () => {
                 ) : (
                   <span className="text-slate-400">—</span>
                 )}
+              </td>
+              <td className="p-4">
+                <span
+                  className={`font-semibold ${
+                    priorityStyle[item.priority] || priorityStyle.Medium
+                  }`}
+                >
+                  {item.priority || 'Medium'}
+                </span>
               </td>
               <td className="p-4">
                 <div className="flex items-center space-x-2">
