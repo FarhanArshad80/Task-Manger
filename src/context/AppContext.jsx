@@ -70,12 +70,36 @@ export const AppProvider = ({ children }) => {
     );
   };
 
+  // Status was the only thing a task could change its mind about. A typo in
+  // the title, a deadline that moved, a job that turned out to be urgent —
+  // all of those meant deleting the task and typing it again from scratch.
+  const updateTask = (id, changes) => {
+    setTasks((prev) =>
+      prev.map((task) => {
+        if (task.id !== id) return task;
+
+        const title = (changes.title ?? task.title).trim();
+
+        return {
+          ...task,
+          ...changes,
+          // An empty title would leave an unidentifiable row, so the old
+          // one stands rather than the task losing its name.
+          title: title || task.title,
+          // Clearing the date field means "no deadline", which is a real
+          // answer and has to survive as null rather than an empty string.
+          deadline: changes.deadline || null,
+        };
+      })
+    );
+  };
+
   const deleteTask = (id) => {
     setTasks((prev) => prev.filter((task) => task.id !== id));
   };
 
   return (
-    <AppContext.Provider value={{ tasks, theme, toggleTheme, addTask, updateTaskStatus, deleteTask }}>
+    <AppContext.Provider value={{ tasks, theme, toggleTheme, addTask, updateTask, updateTaskStatus, deleteTask }}>
       <div className={theme === 'dark' ? 'dark bg-slate-900 text-white min-h-screen' : 'bg-slate-50 text-slate-900 min-h-screen'}>
         {children}
       </div>

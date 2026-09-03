@@ -1,7 +1,7 @@
 import React, { useContext, useMemo, useState } from 'react';
 import { AppContext } from '../../context/AppContext';
 import Badge from '../ui/Badge';
-import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X } from 'lucide-react';
 
 const STATUSES = ['Pending', 'In Progress', 'Completed'];
 const PRIORITIES = ['High', 'Medium', 'Low'];
@@ -25,11 +25,13 @@ const controlClass =
   'px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm';
 
 const TaskTable = () => {
-  const { tasks, updateTaskStatus, deleteTask } = useContext(AppContext);
+  const { tasks, updateTask, updateTaskStatus, deleteTask } = useContext(AppContext);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL);
   const [priorityFilter, setPriorityFilter] = useState(ALL);
   const [sort, setSort] = useState({ key: null, direction: 'asc' });
+  const [editingId, setEditingId] = useState(null);
+  const [draft, setDraft] = useState({ title: '', deadline: '', priority: 'Medium' });
 
   // 'YYYY-MM-DD' strings compare correctly as plain text, and building the
   // key from local parts keeps "today" honest in every timezone.
@@ -100,6 +102,35 @@ const TaskTable = () => {
       if (current.direction === 'asc') return { key, direction: 'desc' };
       return { key: null, direction: 'asc' };
     });
+  };
+
+  // The draft is filled from the row as it stands when editing opens, so a
+  // task changed elsewhere is never edited from a stale copy.
+  const startEditing = (task) => {
+    setEditingId(task.id);
+    setDraft({
+      title: task.title,
+      deadline: task.deadline || '',
+      priority: task.priority || 'Medium',
+    });
+  };
+
+  const saveEdit = () => {
+    if (!draft.title.trim()) return;
+
+    updateTask(editingId, draft);
+    setEditingId(null);
+  };
+
+  // Enter commits, Escape abandons — the shortcuts anyone editing a cell
+  // reaches for before they look for a button.
+  const handleEditKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      saveEdit();
+    } else if (event.key === 'Escape') {
+      setEditingId(null);
+    }
   };
 
   const isFiltered =
@@ -206,10 +237,33 @@ const TaskTable = () => {
         <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
           {sortedTasks.map((item) => (
             <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-              <td className="p-4 font-medium max-w-xs truncate">{item.title}</td>
+              <td className="p-4 font-medium max-w-xs truncate">
+                {editingId === item.id ? (
+                  <input
+                    type="text"
+                    value={draft.title}
+                    onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+                    onKeyDown={handleEditKeyDown}
+                    aria-label="Task description"
+                    autoFocus
+                    className={`w-full ${controlClass}`}
+                  />
+                ) : (
+                  item.title
+                )}
+              </td>
               <td className="p-4 font-mono text-slate-500">{item.date}</td>
               <td className="p-4 font-mono">
-                {item.deadline ? (
+                {editingId === item.id ? (
+                  <input
+                    type="date"
+                    value={draft.deadline}
+                    onChange={(e) => setDraft({ ...draft, deadline: e.target.value })}
+                    onKeyDown={handleEditKeyDown}
+                    aria-label="Due date"
+                    className={controlClass}
+                  />
+                ) : item.deadline ? (
                   <span
                     className={
                       isOverdue(item)
@@ -226,13 +280,29 @@ const TaskTable = () => {
                 )}
               </td>
               <td className="p-4">
-                <span
-                  className={`font-semibold ${
-                    priorityStyle[item.priority] || priorityStyle.Medium
-                  }`}
-                >
-                  {item.priority || 'Medium'}
-                </span>
+                {editingId === item.id ? (
+                  <select
+                    value={draft.priority}
+                    onChange={(e) => setDraft({ ...draft, priority: e.target.value })}
+                    onKeyDown={handleEditKeyDown}
+                    aria-label="Priority"
+                    className={controlClass}
+                  >
+                    {PRIORITIES.map((level) => (
+                      <option key={level} value={level} className="bg-white dark:bg-slate-800">
+                        {level}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span
+                    className={`font-semibold ${
+                      priorityStyle[item.priority] || priorityStyle.Medium
+                    }`}
+                  >
+                    {item.priority || 'Medium'}
+                  </span>
+                )}
               </td>
               <td className="p-4">
                 <div className="flex items-center space-x-2">
@@ -249,12 +319,42 @@ const TaskTable = () => {
                 </div>
               </td>
               <td className="p-4 text-right">
-                <button 
-                  onClick={() => deleteTask(item.id)} 
-                  className="text-slate-400 hover:text-rose-500 transition-colors p-1 rounded"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {editingId === item.id ? (
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      onClick={saveEdit}
+                      disabled={!draft.title.trim()}
+                      aria-label="Save changes"
+                      className="text-emerald-500 hover:text-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors p-1 rounded"
+                    >
+                      <Check className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setEditingId(null)}
+                      aria-label="Discard changes"
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      onClick={() => startEditing(item)}
+                      aria-label={`Edit "${item.title}"`}
+                      className="text-slate-400 hover:text-indigo-500 transition-colors p-1 rounded"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => deleteTask(item.id)}
+                      aria-label={`Delete "${item.title}"`}
+                      className="text-slate-400 hover:text-rose-500 transition-colors p-1 rounded"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
               </td>
             </tr>
           ))}
