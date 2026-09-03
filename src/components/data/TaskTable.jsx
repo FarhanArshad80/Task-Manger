@@ -1,11 +1,25 @@
 import React, { useContext, useMemo, useState } from 'react';
 import { AppContext } from '../../context/AppContext';
 import Badge from '../ui/Badge';
-import { Trash2, Search } from 'lucide-react';
+import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 
 const STATUSES = ['Pending', 'In Progress', 'Completed'];
 const PRIORITIES = ['High', 'Medium', 'Low'];
 const ALL = 'All';
+
+// Sorting keys. Priority and status are ranked by what they mean rather
+// than alphabetically — "High, Medium, Low" is the useful order, and
+// "High, Low, Medium" is the one plain text comparison would give.
+const PRIORITY_RANK = { High: 0, Medium: 1, Low: 2 };
+const STATUS_RANK = { 'In Progress': 0, Pending: 1, Completed: 2 };
+
+const SORTABLE = {
+  title: { label: 'Task Description', read: (t) => t.title.toLowerCase() },
+  date: { label: 'Created', read: (t) => t.date || '' },
+  deadline: { label: 'Due', read: (t) => t.deadline || '' },
+  priority: { label: 'Priority', read: (t) => PRIORITY_RANK[t.priority] ?? PRIORITY_RANK.Medium },
+  status: { label: 'Status Flag', read: (t) => STATUS_RANK[t.status] ?? 1 },
+};
 
 const controlClass =
   'px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm';
@@ -15,6 +29,7 @@ const TaskTable = () => {
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL);
   const [priorityFilter, setPriorityFilter] = useState(ALL);
+  const [sort, setSort] = useState({ key: null, direction: 'asc' });
 
   // 'YYYY-MM-DD' strings compare correctly as plain text, and building the
   // key from local parts keeps "today" honest in every timezone.
@@ -52,6 +67,40 @@ const TaskTable = () => {
       return true;
     });
   }, [tasks, query, statusFilter, priorityFilter]);
+
+  // Sorting is applied after filtering so the order describes what is on
+  // screen. Tasks with no due date sink to the bottom in either direction:
+  // "no deadline" is not earlier or later than a real one, and letting an
+  // empty string sort as the smallest value would file them all as the most
+  // urgent work in the table.
+  const sortedTasks = useMemo(() => {
+    if (!sort.key) return visibleTasks;
+
+    const { read } = SORTABLE[sort.key];
+    const factor = sort.direction === 'asc' ? 1 : -1;
+    const isBlank = (task) => sort.key === 'deadline' && !task.deadline;
+
+    return [...visibleTasks].sort((a, b) => {
+      if (isBlank(a) !== isBlank(b)) return isBlank(a) ? 1 : -1;
+
+      const left = read(a);
+      const right = read(b);
+
+      if (left < right) return -1 * factor;
+      if (left > right) return 1 * factor;
+      return 0;
+    });
+  }, [visibleTasks, sort]);
+
+  // First click sorts ascending, second flips it, third clears back to the
+  // order the tasks were added in.
+  const toggleSort = (key) => {
+    setSort((current) => {
+      if (current.key !== key) return { key, direction: 'asc' };
+      if (current.direction === 'asc') return { key, direction: 'desc' };
+      return { key: null, direction: 'asc' };
+    });
+  };
 
   const isFiltered =
     query.trim() !== '' || statusFilter !== ALL || priorityFilter !== ALL;
@@ -114,16 +163,48 @@ const TaskTable = () => {
       <table className="w-full text-left border-collapse text-sm">
         <thead>
           <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 uppercase text-xs font-semibold">
-            <th className="p-4">Task Description</th>
-            <th className="p-4">Created</th>
-            <th className="p-4">Due</th>
-            <th className="p-4">Priority</th>
-            <th className="p-4">Status Flag</th>
+            {Object.entries(SORTABLE).map(([key, { label }]) => {
+              const active = sort.key === key;
+              const SortIcon = !active
+                ? ArrowUpDown
+                : sort.direction === 'asc'
+                ? ArrowUp
+                : ArrowDown;
+
+              return (
+                <th
+                  key={key}
+                  className="p-4"
+                  aria-sort={
+                    active
+                      ? sort.direction === 'asc'
+                        ? 'ascending'
+                        : 'descending'
+                      : 'none'
+                  }
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleSort(key)}
+                    className={`group flex items-center gap-1.5 uppercase tracking-wide transition-colors hover:text-indigo-500 ${
+                      active ? 'text-indigo-500' : ''
+                    }`}
+                  >
+                    {label}
+                    <SortIcon
+                      className={`h-3.5 w-3.5 transition-opacity ${
+                        active ? 'opacity-100' : 'opacity-0 group-hover:opacity-60'
+                      }`}
+                    />
+                  </button>
+                </th>
+              );
+            })}
             <th className="p-4 text-right">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-          {visibleTasks.map((item) => (
+          {sortedTasks.map((item) => (
             <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
               <td className="p-4 font-medium max-w-xs truncate">{item.title}</td>
               <td className="p-4 font-mono text-slate-500">{item.date}</td>
@@ -177,7 +258,7 @@ const TaskTable = () => {
               </td>
             </tr>
           ))}
-          {visibleTasks.length === 0 && (
+          {sortedTasks.length === 0 && (
             <tr>
               <td colSpan={6} className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
                 {tasks.length === 0
