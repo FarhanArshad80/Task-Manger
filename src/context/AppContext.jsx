@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
+import { normalizeTags } from '../utils/tags';
 
 export const AppContext = createContext();
 
@@ -61,7 +62,10 @@ export const AppProvider = ({ children }) => {
 
   // Task CRUD operations
   const addTask = (task) => {
-    setTasks((prev) => [...prev, { ...task, id: Date.now().toString() }]);
+    setTasks((prev) => [
+      ...prev,
+      { ...task, tags: normalizeTags(task.tags), id: Date.now().toString() },
+    ]);
   };
 
   const updateTaskStatus = (id, newStatus) => {
@@ -89,6 +93,9 @@ export const AppProvider = ({ children }) => {
           // Clearing the date field means "no deadline", which is a real
           // answer and has to survive as null rather than an empty string.
           deadline: changes.deadline || null,
+          // Tags are only touched when the edit actually mentions them, so a
+          // status change from elsewhere cannot quietly strip them.
+          tags: 'tags' in changes ? normalizeTags(changes.tags) : task.tags || [],
         };
       })
     );

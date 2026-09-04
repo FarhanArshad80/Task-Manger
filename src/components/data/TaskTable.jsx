@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppContext } from '../../context/AppContext';
+import { collectTags, hasTag, tagsToText } from '../../utils/tags';
 import Badge from '../ui/Badge';
 import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X } from 'lucide-react';
 
@@ -31,9 +32,10 @@ const TaskTable = () => {
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL);
   const [priorityFilter, setPriorityFilter] = useState(ALL);
+  const [tagFilter, setTagFilter] = useState(ALL);
   const [sort, setSort] = useState({ key: null, direction: 'asc' });
   const [editingId, setEditingId] = useState(null);
-  const [draft, setDraft] = useState({ title: '', deadline: '', priority: 'Medium' });
+  const [draft, setDraft] = useState({ title: '', deadline: '', priority: 'Medium', tags: '' });
   const [selected, setSelected] = useState(() => new Set());
   const selectAllRef = useRef(null);
 
@@ -56,6 +58,17 @@ const TaskTable = () => {
     Low: 'text-emerald-500',
   };
 
+  const availableTags = useMemo(() => collectTags(tasks), [tasks]);
+
+  // A tag can go out of use entirely — the last task carrying it is deleted
+  // or retagged — and a filter pinned to a tag nothing has leaves an empty
+  // table with no visible control explaining why.
+  useEffect(() => {
+    if (tagFilter !== ALL && !availableTags.some((t) => t.toLowerCase() === tagFilter.toLowerCase())) {
+      setTagFilter(ALL);
+    }
+  }, [availableTags, tagFilter]);
+
   // A task saved before the priority picker existed has none of its own;
   // the table already reads those as Medium, so the filter must agree.
   const visibleTasks = useMemo(() => {
@@ -70,9 +83,10 @@ const TaskTable = () => {
       ) {
         return false;
       }
+      if (tagFilter !== ALL && !hasTag(item, tagFilter)) return false;
       return true;
     });
-  }, [tasks, query, statusFilter, priorityFilter]);
+  }, [tasks, query, statusFilter, priorityFilter, tagFilter]);
 
   // Sorting is applied after filtering so the order describes what is on
   // screen. Tasks with no due date sink to the bottom in either direction:
@@ -168,6 +182,7 @@ const TaskTable = () => {
       title: task.title,
       deadline: task.deadline || '',
       priority: task.priority || 'Medium',
+      tags: tagsToText(task.tags),
     });
   };
 
@@ -190,12 +205,16 @@ const TaskTable = () => {
   };
 
   const isFiltered =
-    query.trim() !== '' || statusFilter !== ALL || priorityFilter !== ALL;
+    query.trim() !== '' ||
+    statusFilter !== ALL ||
+    priorityFilter !== ALL ||
+    tagFilter !== ALL;
 
   const clearFilters = () => {
     setQuery('');
     setStatusFilter(ALL);
     setPriorityFilter(ALL);
+    setTagFilter(ALL);
   };
 
   return (
@@ -238,6 +257,21 @@ const TaskTable = () => {
             </option>
           ))}
         </select>
+
+        {availableTags.length > 0 && (
+          <select
+            value={tagFilter}
+            onChange={(e) => setTagFilter(e.target.value)}
+            aria-label="Filter by tag"
+            className={controlClass}
+          >
+            {[ALL, ...availableTags].map((option) => (
+              <option key={option} value={option} className="bg-white dark:bg-slate-800">
+                {option === ALL ? 'All tags' : `#${option}`}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       {selected.size > 0 ? (
@@ -361,19 +395,47 @@ const TaskTable = () => {
                   className="h-4 w-4 cursor-pointer accent-indigo-500"
                 />
               </td>
-              <td className="p-4 font-medium max-w-xs truncate">
+              <td className="p-4 font-medium max-w-xs">
                 {editingId === item.id ? (
-                  <input
-                    type="text"
-                    value={draft.title}
-                    onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-                    onKeyDown={handleEditKeyDown}
-                    aria-label="Task description"
-                    autoFocus
-                    className={`w-full ${controlClass}`}
-                  />
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={draft.title}
+                      onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+                      onKeyDown={handleEditKeyDown}
+                      aria-label="Task description"
+                      autoFocus
+                      className={`w-full ${controlClass}`}
+                    />
+                    <input
+                      type="text"
+                      value={draft.tags}
+                      onChange={(e) => setDraft({ ...draft, tags: e.target.value })}
+                      onKeyDown={handleEditKeyDown}
+                      placeholder="Tags, comma separated"
+                      aria-label="Tags, comma separated"
+                      className={`w-full ${controlClass}`}
+                    />
+                  </div>
                 ) : (
-                  item.title
+                  <div className="space-y-1">
+                    <span className="block truncate">{item.title}</span>
+                    {item.tags?.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {item.tags.map((tag) => (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => setTagFilter(tag)}
+                            title={`Show only #${tag}`}
+                            className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 transition-colors hover:bg-indigo-100 hover:text-indigo-600 dark:bg-slate-700/60 dark:text-slate-300 dark:hover:bg-indigo-500/20 dark:hover:text-indigo-300"
+                          >
+                            #{tag}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
               </td>
               <td className="p-4 font-mono text-slate-500">{item.date}</td>

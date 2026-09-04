@@ -9,6 +9,7 @@ const Tasks = () => {
   const [title, setTitle] = useState('');
   const [deadline, setDeadline] = useState('');
   const [priority, setPriority] = useState('Medium');
+  const [tags, setTags] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -19,10 +20,12 @@ const Tasks = () => {
       priority,                                      // drives Calendar colours and the urgent count
       date: new Date().toISOString().split('T')[0], // created date
       deadline: deadline || null,                    // due date, shown on Calendar
+      tags,                                          // cleaned and capped by the context
     });
     setTitle('');
     setDeadline('');
     setPriority('Medium');
+    setTags('');
   };
 
   return (
@@ -55,6 +58,14 @@ const Tasks = () => {
               </option>
             ))}
           </select>
+          <input
+            type="text"
+            placeholder="Tags, comma separated"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            aria-label="Tags, comma separated"
+            className="sm:w-52 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+          />
           <Button type="submit" disabled={!title.trim()}>
             Deploy Task
           </Button>
