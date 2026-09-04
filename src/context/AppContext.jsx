@@ -98,8 +98,37 @@ export const AppProvider = ({ children }) => {
     setTasks((prev) => prev.filter((task) => task.id !== id));
   };
 
+  // Bulk edits take the whole set in one pass rather than looping the single
+  // -task calls: those would queue an update per task and rewrite storage
+  // that many times for what the user experienced as one action.
+  const updateTasksStatus = (ids, newStatus) => {
+    const target = new Set(ids);
+
+    setTasks((prev) =>
+      prev.map((task) => (target.has(task.id) ? { ...task, status: newStatus } : task))
+    );
+  };
+
+  const deleteTasks = (ids) => {
+    const target = new Set(ids);
+
+    setTasks((prev) => prev.filter((task) => !target.has(task.id)));
+  };
+
   return (
-    <AppContext.Provider value={{ tasks, theme, toggleTheme, addTask, updateTask, updateTaskStatus, deleteTask }}>
+    <AppContext.Provider
+      value={{
+        tasks,
+        theme,
+        toggleTheme,
+        addTask,
+        updateTask,
+        updateTaskStatus,
+        updateTasksStatus,
+        deleteTask,
+        deleteTasks,
+      }}
+    >
       <div className={theme === 'dark' ? 'dark bg-slate-900 text-white min-h-screen' : 'bg-slate-50 text-slate-900 min-h-screen'}>
         {children}
       </div>

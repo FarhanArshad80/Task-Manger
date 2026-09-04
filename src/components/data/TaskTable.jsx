@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppContext } from '../../context/AppContext';
 import Badge from '../ui/Badge';
 import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X } from 'lucide-react';
@@ -25,13 +25,17 @@ const controlClass =
   'px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm';
 
 const TaskTable = () => {
-  const { tasks, updateTask, updateTaskStatus, deleteTask } = useContext(AppContext);
+  const {
+    tasks, updateTask, updateTaskStatus, updateTasksStatus, deleteTask, deleteTasks,
+  } = useContext(AppContext);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL);
   const [priorityFilter, setPriorityFilter] = useState(ALL);
   const [sort, setSort] = useState({ key: null, direction: 'asc' });
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState({ title: '', deadline: '', priority: 'Medium' });
+  const [selected, setSelected] = useState(() => new Set());
+  const selectAllRef = useRef(null);
 
   // 'YYYY-MM-DD' strings compare correctly as plain text, and building the
   // key from local parts keeps "today" honest in every timezone.
@@ -102,6 +106,58 @@ const TaskTable = () => {
       if (current.direction === 'asc') return { key, direction: 'desc' };
       return { key: null, direction: 'asc' };
     });
+  };
+
+  // Selection is kept to what the filters are actually showing. Acting on
+  // rows that scrolled out of the result set is the kind of surprise a bulk
+  // delete cannot be talked out of afterwards, so narrowing the filter drops
+  // anything it hides rather than carrying it along invisibly.
+  useEffect(() => {
+    setSelected((current) => {
+      if (current.size === 0) return current;
+
+      const visible = new Set(visibleTasks.map((task) => task.id));
+      const kept = [...current].filter((id) => visible.has(id));
+
+      return kept.length === current.size ? current : new Set(kept);
+    });
+  }, [visibleTasks]);
+
+  const allVisibleSelected =
+    sortedTasks.length > 0 && sortedTasks.every((task) => selected.has(task.id));
+
+  // A part-filled box is a real third state, and only the DOM property can
+  // express it — there is no attribute for it in JSX.
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = selected.size > 0 && !allVisibleSelected;
+    }
+  }, [selected, allVisibleSelected]);
+
+  const toggleRow = (id) => {
+    setSelected((current) => {
+      const next = new Set(current);
+
+      if (!next.delete(id)) next.add(id);
+
+      return next;
+    });
+  };
+
+  const toggleAllVisible = () => {
+    setSelected(allVisibleSelected ? new Set() : new Set(sortedTasks.map((t) => t.id)));
+  };
+
+  const applyBulkStatus = (status) => {
+    if (!status) return;
+
+    updateTasksStatus([...selected], status);
+    setSelected(new Set());
+  };
+
+  const deleteSelected = () => {
+    deleteTasks([...selected]);
+    setSelected(new Set());
   };
 
   // The draft is filled from the row as it stands when editing opens, so a
@@ -184,16 +240,68 @@ const TaskTable = () => {
         </select>
       </div>
 
-      <p className="text-xs text-slate-500 dark:text-slate-400" aria-live="polite">
-        {isFiltered
-          ? `Showing ${visibleTasks.length} of ${tasks.length} tasks`
-          : `${tasks.length} task${tasks.length === 1 ? '' : 's'}`}
-      </p>
+      {selected.size > 0 ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 dark:border-indigo-500/40 dark:bg-indigo-500/10">
+          <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-300">
+            {selected.size} selected
+          </span>
+
+          <select
+            value=""
+            onChange={(e) => applyBulkStatus(e.target.value)}
+            aria-label="Set status for selected tasks"
+            className={`${controlClass} py-1 text-xs`}
+          >
+            <option value="" className="bg-white dark:bg-slate-800">
+              Set status…
+            </option>
+            {STATUSES.map((option) => (
+              <option key={option} value={option} className="bg-white dark:bg-slate-800">
+                {option}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="button"
+            onClick={deleteSelected}
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-rose-500 transition-colors hover:bg-rose-500/10"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelected(new Set())}
+            className="ml-auto text-xs font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+          >
+            Clear selection
+          </button>
+        </div>
+      ) : (
+        <p className="text-xs text-slate-500 dark:text-slate-400" aria-live="polite">
+          {isFiltered
+            ? `Showing ${visibleTasks.length} of ${tasks.length} tasks`
+            : `${tasks.length} task${tasks.length === 1 ? '' : 's'}`}
+        </p>
+      )}
 
       <div className="overflow-x-auto w-full">
       <table className="w-full text-left border-collapse text-sm">
         <thead>
           <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 uppercase text-xs font-semibold">
+            <th className="p-4 w-10">
+              <input
+                type="checkbox"
+                ref={selectAllRef}
+                checked={allVisibleSelected}
+                onChange={toggleAllVisible}
+                disabled={sortedTasks.length === 0}
+                aria-label="Select all shown tasks"
+                className="h-4 w-4 cursor-pointer accent-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+              />
+            </th>
             {Object.entries(SORTABLE).map(([key, { label }]) => {
               const active = sort.key === key;
               const SortIcon = !active
@@ -236,7 +344,23 @@ const TaskTable = () => {
         </thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
           {sortedTasks.map((item) => (
-            <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+            <tr
+              key={item.id}
+              className={`transition-colors ${
+                selected.has(item.id)
+                  ? 'bg-indigo-50/70 dark:bg-indigo-500/10'
+                  : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/30'
+              }`}
+            >
+              <td className="p-4">
+                <input
+                  type="checkbox"
+                  checked={selected.has(item.id)}
+                  onChange={() => toggleRow(item.id)}
+                  aria-label={`Select "${item.title}"`}
+                  className="h-4 w-4 cursor-pointer accent-indigo-500"
+                />
+              </td>
               <td className="p-4 font-medium max-w-xs truncate">
                 {editingId === item.id ? (
                   <input
@@ -360,7 +484,7 @@ const TaskTable = () => {
           ))}
           {sortedTasks.length === 0 && (
             <tr>
-              <td colSpan={6} className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
+              <td colSpan={7} className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
                 {tasks.length === 0
                   ? 'No tasks yet — deploy one above to get started.'
                   : 'No tasks match the current filters.'}
