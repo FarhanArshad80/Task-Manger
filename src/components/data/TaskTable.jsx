@@ -1,8 +1,9 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppContext } from '../../context/AppContext';
 import { collectTags, hasTag, tagsToText } from '../../utils/tags';
+import { csvFilename, downloadCsv, tasksToCsv } from '../../utils/csv';
 import Badge from '../ui/Badge';
-import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X } from 'lucide-react';
+import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download } from 'lucide-react';
 
 const STATUSES = ['Pending', 'In Progress', 'Completed'];
 const PRIORITIES = ['High', 'Medium', 'Low'];
@@ -169,6 +170,20 @@ const TaskTable = () => {
     setSelected(new Set());
   };
 
+  // Exports what is on screen, in the order it is on screen: the filters and
+  // the sort are the question that was asked, and a file that ignored them
+  // would answer a different one. Selecting rows narrows it further, since
+  // that is a more specific way of saying the same thing.
+  const exportCsv = () => {
+    const rows = selected.size > 0
+      ? sortedTasks.filter((task) => selected.has(task.id))
+      : sortedTasks;
+
+    if (rows.length === 0) return;
+
+    downloadCsv(tasksToCsv(rows), csvFilename());
+  };
+
   const deleteSelected = () => {
     deleteTasks([...selected]);
     setSelected(new Set());
@@ -298,6 +313,15 @@ const TaskTable = () => {
 
           <button
             type="button"
+            onClick={exportCsv}
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-500/10 dark:text-slate-300"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export
+          </button>
+
+          <button
+            type="button"
             onClick={deleteSelected}
             className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-rose-500 transition-colors hover:bg-rose-500/10"
           >
@@ -314,11 +338,28 @@ const TaskTable = () => {
           </button>
         </div>
       ) : (
-        <p className="text-xs text-slate-500 dark:text-slate-400" aria-live="polite">
-          {isFiltered
-            ? `Showing ${visibleTasks.length} of ${tasks.length} tasks`
-            : `${tasks.length} task${tasks.length === 1 ? '' : 's'}`}
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-xs text-slate-500 dark:text-slate-400" aria-live="polite">
+            {isFiltered
+              ? `Showing ${visibleTasks.length} of ${tasks.length} tasks`
+              : `${tasks.length} task${tasks.length === 1 ? '' : 's'}`}
+          </p>
+
+          <button
+            type="button"
+            onClick={exportCsv}
+            disabled={sortedTasks.length === 0}
+            title={
+              isFiltered
+                ? 'Download the tasks shown here as a CSV'
+                : 'Download every task as a CSV'
+            }
+            className="ml-auto flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-slate-500 transition-colors hover:bg-slate-500/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent dark:text-slate-400"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export CSV
+          </button>
+        </div>
       )}
 
       <div className="overflow-x-auto w-full">
