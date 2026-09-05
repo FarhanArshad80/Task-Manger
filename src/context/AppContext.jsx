@@ -39,6 +39,16 @@ export const AppProvider = ({ children }) => {
 
   const [theme, setTheme] = useState(loadTheme);
 
+  // A delete is the one action here that cannot be talked out of afterwards,
+  // and a bulk delete takes a screenful at once. What was removed is held —
+  // with the row each task occupied — until the undo window closes, so the
+  // list can be put back the way it was read rather than reappearing at the
+  // bottom in a new order.
+  //
+  // Deliberately not persisted: an undo offer that outlives the tab it was
+  // made in is a task quietly coming back days later.
+  const [recentlyDeleted, setRecentlyDeleted] = useState(null);
+
   useEffect(() => {
     try {
       localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
@@ -102,6 +112,10 @@ export const AppProvider = ({ children }) => {
   };
 
   const deleteTask = (id) => {
+    const index = tasks.findIndex((task) => task.id === id);
+    if (index === -1) return;
+
+    setRecentlyDeleted({ entries: [{ task: tasks[index], index }] });
     setTasks((prev) => prev.filter((task) => task.id !== id));
   };
 
@@ -118,9 +132,44 @@ export const AppProvider = ({ children }) => {
 
   const deleteTasks = (ids) => {
     const target = new Set(ids);
+    const entries = [];
 
+    tasks.forEach((task, index) => {
+      if (target.has(task.id)) entries.push({ task, index });
+    });
+
+    if (entries.length === 0) return;
+
+    setRecentlyDeleted({ entries });
     setTasks((prev) => prev.filter((task) => !target.has(task.id)));
   };
+
+  // Each task goes back to the index it was taken from, oldest index first,
+  // so re-inserting one does not push the next one past its own slot.
+  const restoreDeleted = () => {
+    if (!recentlyDeleted) return;
+
+    const { entries } = recentlyDeleted;
+
+    setTasks((prev) => {
+      const next = [...prev];
+
+      for (const { task, index } of entries) {
+        // A task re-created under the same id while the offer was open is
+        // already back; putting it in twice would give the table two rows
+        // that every later edit would change together.
+        if (next.some((existing) => existing.id === task.id)) continue;
+
+        next.splice(Math.min(index, next.length), 0, task);
+      }
+
+      return next;
+    });
+
+    setRecentlyDeleted(null);
+  };
+
+  const dismissDeleted = () => setRecentlyDeleted(null);
 
   return (
     <AppContext.Provider
@@ -134,6 +183,9 @@ export const AppProvider = ({ children }) => {
         updateTasksStatus,
         deleteTask,
         deleteTasks,
+        recentlyDeleted,
+        restoreDeleted,
+        dismissDeleted,
       }}
     >
       <div className={theme === 'dark' ? 'dark bg-slate-900 text-white min-h-screen' : 'bg-slate-50 text-slate-900 min-h-screen'}>

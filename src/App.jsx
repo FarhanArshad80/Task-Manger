@@ -2,6 +2,7 @@ import React from 'react';
 import Sidebar from './components/layout/Sidebar';
 import Navbar from './components/layout/Navbar';
 import AppRoutes from './routes/AppRoutes';
+import UndoBar from './components/ui/UndoBar';
 
 const App = () => {
   return (
@@ -13,6 +14,10 @@ const App = () => {
           <AppRoutes />
         </main>
       </div>
+
+      {/* Above the routes rather than inside the task page: a delete made on
+          one screen should still be undoable after navigating away from it. */}
+      <UndoBar />
     </div>
   );
 };
