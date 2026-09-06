@@ -63,7 +63,8 @@ const controlClass =
 
 const TaskTable = () => {
   const {
-    tasks, updateTask, updateTaskStatus, updateTasksStatus, deleteTask, deleteTasks,
+    tasks, updateTask, updateTaskStatus, updateTasksStatus, updateTasksPriority,
+    deleteTask, deleteTasks,
   } = useContext(AppContext);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL);
@@ -200,10 +201,21 @@ const TaskTable = () => {
     setSelected(allVisibleSelected ? new Set() : new Set(sortedTasks.map((t) => t.id)));
   };
 
+  // Both bulk edits clear the selection afterwards. The rows they acted on
+  // may well have just filtered themselves out from under it, and a
+  // selection that survives into a set of rows nobody can see is how the
+  // next bulk action hits the wrong tasks.
   const applyBulkStatus = (status) => {
     if (!status) return;
 
     updateTasksStatus([...selected], status);
+    setSelected(new Set());
+  };
+
+  const applyBulkPriority = (priority) => {
+    if (!priority) return;
+
+    updateTasksPriority([...selected], priority);
     setSelected(new Set());
   };
 
@@ -357,6 +369,22 @@ const TaskTable = () => {
               Set status…
             </option>
             {STATUSES.map((option) => (
+              <option key={option} value={option} className="bg-white dark:bg-slate-800">
+                {option}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value=""
+            onChange={(e) => applyBulkPriority(e.target.value)}
+            aria-label="Set priority for selected tasks"
+            className={`${controlClass} py-1 text-xs`}
+          >
+            <option value="" className="bg-white dark:bg-slate-800">
+              Set priority…
+            </option>
+            {PRIORITIES.map((option) => (
               <option key={option} value={option} className="bg-white dark:bg-slate-800">
                 {option}
               </option>

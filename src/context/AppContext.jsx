@@ -130,6 +130,17 @@ export const AppProvider = ({ children }) => {
     );
   };
 
+  // Priority is the field that gets rewritten in batches — a sprint slips
+  // and a dozen tasks drop to Low, a release date lands and a dozen go High.
+  // Doing that one row at a time meant reopening each editor in turn.
+  const updateTasksPriority = (ids, priority) => {
+    const target = new Set(ids);
+
+    setTasks((prev) =>
+      prev.map((task) => (target.has(task.id) ? { ...task, priority } : task))
+    );
+  };
+
   const deleteTasks = (ids) => {
     const target = new Set(ids);
     const entries = [];
@@ -181,6 +192,7 @@ export const AppProvider = ({ children }) => {
         updateTask,
         updateTaskStatus,
         updateTasksStatus,
+        updateTasksPriority,
         deleteTask,
         deleteTasks,
         recentlyDeleted,
