@@ -111,6 +111,39 @@ export const AppProvider = ({ children }) => {
     );
   };
 
+  // Standing work recurs: the same weekly report, the same release checklist,
+  // the same three steps for every new client. Re-typing the title, tags,
+  // priority and deadline each time is the kind of work a task manager is
+  // supposed to be saving.
+  const duplicateTask = (id) => {
+    setTasks((prev) => {
+      const index = prev.findIndex((task) => task.id === id);
+      if (index === -1) return prev;
+
+      const source = prev[index];
+      const copy = {
+        ...source,
+        id: Date.now().toString(),
+        // A copy is work still to do, whatever became of the original, and
+        // it is created now rather than whenever the original was.
+        status: 'Pending',
+        date: new Date().toLocaleDateString('en-CA'),
+        // The deadline belonged to that occurrence, not to the shape of the
+        // task — inheriting it would file half these copies as overdue on
+        // the day they are made.
+        deadline: null,
+        tags: [...(source.tags || [])],
+      };
+
+      const next = [...prev];
+      // Directly below the original, where the eye already is — appending to
+      // the end would put it out of sight in any list worth duplicating from.
+      next.splice(index + 1, 0, copy);
+
+      return next;
+    });
+  };
+
   const deleteTask = (id) => {
     const index = tasks.findIndex((task) => task.id === id);
     if (index === -1) return;
@@ -189,6 +222,7 @@ export const AppProvider = ({ children }) => {
         theme,
         toggleTheme,
         addTask,
+        duplicateTask,
         updateTask,
         updateTaskStatus,
         updateTasksStatus,

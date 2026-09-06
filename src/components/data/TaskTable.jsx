@@ -3,7 +3,7 @@ import { AppContext } from '../../context/AppContext';
 import { collectTags, hasTag, tagsToText } from '../../utils/tags';
 import { csvFilename, downloadCsv, tasksToCsv } from '../../utils/csv';
 import Badge from '../ui/Badge';
-import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download } from 'lucide-react';
+import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download, Copy } from 'lucide-react';
 
 const STATUSES = ['Pending', 'In Progress', 'Completed'];
 const PRIORITIES = ['High', 'Medium', 'Low'];
@@ -64,7 +64,7 @@ const controlClass =
 const TaskTable = () => {
   const {
     tasks, updateTask, updateTaskStatus, updateTasksStatus, updateTasksPriority,
-    deleteTask, deleteTasks,
+    duplicateTask, deleteTask, deleteTasks,
   } = useContext(AppContext);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL);
@@ -652,6 +652,14 @@ const TaskTable = () => {
                       className="text-slate-400 hover:text-indigo-500 transition-colors p-1 rounded"
                     >
                       <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => duplicateTask(item.id)}
+                      aria-label={`Duplicate "${item.title}"`}
+                      title="Duplicate — same details, fresh start"
+                      className="text-slate-400 hover:text-indigo-500 transition-colors p-1 rounded"
+                    >
+                      <Copy className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => deleteTask(item.id)}
