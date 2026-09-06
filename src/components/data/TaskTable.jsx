@@ -23,6 +23,41 @@ const SORTABLE = {
   status: { label: 'Status Flag', read: (t) => STATUS_RANK[t.status] ?? 1 },
 };
 
+// Deadline bands. The table has always drawn overdue rows in red but given
+// no way to ask for only those, which is the first thing anyone opening a
+// task list on a Monday morning wants to know.
+//
+// Every comparison is between 'YYYY-MM-DD' strings, which sort correctly as
+// plain text — no Date objects, and so no timezone to get wrong.
+const DUE_FILTERS = {
+  [ALL]: { label: 'Any due date', test: () => true },
+  overdue: {
+    label: 'Overdue',
+    // Completed work is not overdue however late it was finished; the point
+    // of this band is what still needs doing.
+    test: (task, today) =>
+      Boolean(task.deadline) && task.deadline < today && task.status !== 'Completed',
+  },
+  today: { label: 'Due today', test: (task, today) => task.deadline === today },
+  week: {
+    label: 'Due within 7 days',
+    test: (task, today, horizon) =>
+      Boolean(task.deadline) && task.deadline >= today && task.deadline <= horizon,
+  },
+  // Not an absence worth hiding: a task with no deadline is the one most
+  // likely to have been forgotten about.
+  none: { label: 'No deadline', test: (task) => !task.deadline },
+};
+
+function shiftDateKey(dateKey, days) {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+
+  date.setDate(date.getDate() + days);
+
+  return date.toLocaleDateString('en-CA');
+}
+
 const controlClass =
   'px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm';
 
@@ -34,6 +69,7 @@ const TaskTable = () => {
   const [statusFilter, setStatusFilter] = useState(ALL);
   const [priorityFilter, setPriorityFilter] = useState(ALL);
   const [tagFilter, setTagFilter] = useState(ALL);
+  const [dueFilter, setDueFilter] = useState(ALL);
   const [sort, setSort] = useState({ key: null, direction: 'asc' });
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState({ title: '', deadline: '', priority: 'Medium', tags: '' });
@@ -43,8 +79,8 @@ const TaskTable = () => {
   // 'YYYY-MM-DD' strings compare correctly as plain text, and building the
   // key from local parts keeps "today" honest in every timezone.
   const today = new Date().toLocaleDateString('en-CA');
-  const isOverdue = (item) =>
-    Boolean(item.deadline) && item.deadline < today && item.status !== 'Completed';
+  const dueHorizon = useMemo(() => shiftDateKey(today, 7), [today]);
+  const isOverdue = (item) => DUE_FILTERS.overdue.test(item, today);
 
   // Safely moved inside the component block
   const getBadgeVariant = (statusFlag) => {
@@ -85,9 +121,10 @@ const TaskTable = () => {
         return false;
       }
       if (tagFilter !== ALL && !hasTag(item, tagFilter)) return false;
+      if (!DUE_FILTERS[dueFilter].test(item, today, dueHorizon)) return false;
       return true;
     });
-  }, [tasks, query, statusFilter, priorityFilter, tagFilter]);
+  }, [tasks, query, statusFilter, priorityFilter, tagFilter, dueFilter, today, dueHorizon]);
 
   // Sorting is applied after filtering so the order describes what is on
   // screen. Tasks with no due date sink to the bottom in either direction:
@@ -223,13 +260,15 @@ const TaskTable = () => {
     query.trim() !== '' ||
     statusFilter !== ALL ||
     priorityFilter !== ALL ||
-    tagFilter !== ALL;
+    tagFilter !== ALL ||
+    dueFilter !== ALL;
 
   const clearFilters = () => {
     setQuery('');
     setStatusFilter(ALL);
     setPriorityFilter(ALL);
     setTagFilter(ALL);
+    setDueFilter(ALL);
   };
 
   return (
@@ -269,6 +308,19 @@ const TaskTable = () => {
           {[ALL, ...PRIORITIES].map((option) => (
             <option key={option} value={option} className="bg-white dark:bg-slate-800">
               {option === ALL ? 'All priorities' : `${option} priority`}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={dueFilter}
+          onChange={(e) => setDueFilter(e.target.value)}
+          aria-label="Filter by due date"
+          className={controlClass}
+        >
+          {Object.entries(DUE_FILTERS).map(([value, { label }]) => (
+            <option key={value} value={value} className="bg-white dark:bg-slate-800">
+              {label}
             </option>
           ))}
         </select>
