@@ -3,7 +3,7 @@ import { AppContext } from '../../context/AppContext';
 import { collectTags, hasTag, tagsToText } from '../../utils/tags';
 import { csvFilename, downloadCsv, tasksToCsv } from '../../utils/csv';
 import Badge from '../ui/Badge';
-import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download, Copy } from 'lucide-react';
+import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download, Copy, CalendarOff } from 'lucide-react';
 
 const STATUSES = ['Pending', 'In Progress', 'Completed'];
 const PRIORITIES = ['High', 'Medium', 'Low'];
@@ -64,7 +64,7 @@ const controlClass =
 const TaskTable = () => {
   const {
     tasks, updateTask, updateTaskStatus, updateTasksStatus, updateTasksPriority,
-    duplicateTask, deleteTask, deleteTasks,
+    updateTasksDeadline, duplicateTask, deleteTask, deleteTasks,
   } = useContext(AppContext);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL);
@@ -216,6 +216,14 @@ const TaskTable = () => {
     if (!priority) return;
 
     updateTasksPriority([...selected], priority);
+    setSelected(new Set());
+  };
+
+  // Same clearing rule as the two above, and for the same reason: a new
+  // deadline can filter the rows it was applied to straight out of the due
+  // -date band being viewed.
+  const applyBulkDeadline = (deadline) => {
+    updateTasksDeadline([...selected], deadline);
     setSelected(new Set());
   };
 
@@ -390,6 +398,33 @@ const TaskTable = () => {
               </option>
             ))}
           </select>
+
+          {/* Left empty on purpose, like the two pickers beside it: the box
+              is an instruction to give, not a value the selection holds — the
+              rows underneath may well have five different dates between
+              them. */}
+          <label className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-300">
+            Due
+            <input
+              type="date"
+              value=""
+              onChange={(e) => applyBulkDeadline(e.target.value)}
+              aria-label="Set due date for selected tasks"
+              className={`${controlClass} py-1 text-xs`}
+            />
+          </label>
+
+          {/* A date box can be typed into but never emptied on command, and
+              "no deadline" is a real state the table already filters for. */}
+          <button
+            type="button"
+            onClick={() => applyBulkDeadline('')}
+            title="Remove the due date from the selected tasks"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-500/10 dark:text-slate-300"
+          >
+            <CalendarOff className="h-3.5 w-3.5" />
+            Clear due
+          </button>
 
           <button
             type="button"

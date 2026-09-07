@@ -174,6 +174,24 @@ export const AppProvider = ({ children }) => {
     );
   };
 
+  // Deadlines move in batches for the same reason priorities do: a release
+  // slips and everything hanging off it slips with it, or a week of work gets
+  // pulled forward at once. Doing that a row at a time meant opening every
+  // editor in turn and typing the same date into each.
+  //
+  // An empty value is a real answer rather than a no-op — it means the work
+  // is still to do, just not to a date — so it clears the deadline instead of
+  // being ignored.
+  const updateTasksDeadline = (ids, deadline) => {
+    const target = new Set(ids);
+
+    setTasks((prev) =>
+      prev.map((task) =>
+        target.has(task.id) ? { ...task, deadline: deadline || null } : task
+      )
+    );
+  };
+
   const deleteTasks = (ids) => {
     const target = new Set(ids);
     const entries = [];
@@ -227,6 +245,7 @@ export const AppProvider = ({ children }) => {
         updateTaskStatus,
         updateTasksStatus,
         updateTasksPriority,
+        updateTasksDeadline,
         deleteTask,
         deleteTasks,
         recentlyDeleted,
