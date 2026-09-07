@@ -1,9 +1,9 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppContext } from '../../context/AppContext';
 import { collectTags, hasTag, tagsToText } from '../../utils/tags';
-import { csvFilename, downloadCsv, tasksToCsv } from '../../utils/csv';
+import { csvFilename, csvToTasks, downloadCsv, tasksToCsv } from '../../utils/csv';
 import Badge from '../ui/Badge';
-import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download, Copy, CalendarOff } from 'lucide-react';
+import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download, Copy, CalendarOff, Upload } from 'lucide-react';
 
 const STATUSES = ['Pending', 'In Progress', 'Completed'];
 const PRIORITIES = ['High', 'Medium', 'Low'];
@@ -64,7 +64,7 @@ const controlClass =
 const TaskTable = () => {
   const {
     tasks, updateTask, updateTaskStatus, updateTasksStatus, updateTasksPriority,
-    updateTasksDeadline, duplicateTask, deleteTask, deleteTasks,
+    updateTasksDeadline, duplicateTask, deleteTask, deleteTasks, importTasks,
   } = useContext(AppContext);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL);
@@ -75,6 +75,10 @@ const TaskTable = () => {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState({ title: '', deadline: '', priority: 'Medium', tags: '' });
   const [selected, setSelected] = useState(() => new Set());
+  // What the last import did. Reading a file is the one action here with no
+  // visible result of its own — thirty new rows at the bottom of a filtered
+  // table can look exactly like nothing happening.
+  const [importNote, setImportNote] = useState('');
   const selectAllRef = useRef(null);
 
   // 'YYYY-MM-DD' strings compare correctly as plain text, and building the
@@ -241,6 +245,42 @@ const TaskTable = () => {
     downloadCsv(tasksToCsv(rows), csvFilename());
   };
 
+  // Reads a CSV off disk and adds what it can make sense of. Anything the
+  // reader could not turn into a task is reported rather than dropped in
+  // silence — a file where half the lines went missing should say so.
+  const importCsv = async (event) => {
+    const file = event.target.files?.[0];
+
+    // Choosing the same file twice fires no change event unless the input is
+    // emptied first, and re-importing a file you have just corrected is a
+    // completely normal thing to want to do.
+    event.target.value = '';
+
+    if (!file) return;
+
+    try {
+      const { tasks: incoming, skipped, missingHeader } = csvToTasks(await file.text(), today);
+
+      if (missingHeader) {
+        setImportNote('That file has no "Task" column, so there is nothing to import.');
+        return;
+      }
+
+      if (incoming.length === 0) {
+        setImportNote('No rows in that file could be read as tasks.');
+        return;
+      }
+
+      importTasks(incoming);
+      setImportNote(
+        `Imported ${incoming.length} task${incoming.length === 1 ? '' : 's'}` +
+          (skipped > 0 ? ` · ${skipped} row${skipped === 1 ? '' : 's'} skipped` : '')
+      );
+    } catch {
+      setImportNote("That file couldn't be read.");
+    }
+  };
+
   const deleteSelected = () => {
     deleteTasks([...selected]);
     setSelected(new Set());
@@ -361,6 +401,22 @@ const TaskTable = () => {
         )}
       </div>
 
+      {importNote && (
+        <p
+          role="status"
+          className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-300"
+        >
+          {importNote}
+          <button
+            type="button"
+            onClick={() => setImportNote('')}
+            className="ml-2 font-semibold text-indigo-500 hover:underline"
+          >
+            Dismiss
+          </button>
+        </p>
+      )}
+
       {selected.size > 0 ? (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 dark:border-indigo-500/40 dark:bg-indigo-500/10">
           <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-300">
@@ -460,6 +516,23 @@ const TaskTable = () => {
               : `${tasks.length} task${tasks.length === 1 ? '' : 's'}`}
           </p>
 
+          {/* The input is hidden but still reachable by keyboard — `hidden`
+              would take it out of the tab order and leave the control usable
+              by mouse only. */}
+          <label
+            title="Add tasks from a CSV file"
+            className="ml-auto flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-slate-500 transition-colors hover:bg-slate-500/10 focus-within:ring-2 focus-within:ring-indigo-500 dark:text-slate-400"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            Import CSV
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              onChange={importCsv}
+              className="sr-only"
+            />
+          </label>
+
           <button
             type="button"
             onClick={exportCsv}
@@ -469,7 +542,7 @@ const TaskTable = () => {
                 ? 'Download the tasks shown here as a CSV'
                 : 'Download every task as a CSV'
             }
-            className="ml-auto flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-slate-500 transition-colors hover:bg-slate-500/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent dark:text-slate-400"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-slate-500 transition-colors hover:bg-slate-500/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent dark:text-slate-400"
           >
             <Download className="h-3.5 w-3.5" />
             Export CSV

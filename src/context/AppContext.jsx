@@ -6,6 +6,19 @@ export const AppContext = createContext();
 const TASKS_KEY = 'taskengine.tasks';
 const THEME_KEY = 'taskengine.theme';
 
+// Ids only ever get compared to each other, so the clock is enough to order
+// them - but a bare timestamp is not enough to tell them apart. Creating a
+// dozen tasks inside the same millisecond is exactly what importing a file
+// does, and identical ids would give every one of them the edits, the status
+// changes and the deletes meant for the first.
+let idSequence = 0;
+
+function createId() {
+  idSequence += 1;
+
+  return `${Date.now().toString(36)}-${idSequence.toString(36)}`;
+}
+
 const seedTasks = [
   { id: '1', title: 'Review system architecture', status: 'Completed', priority: 'High', date: '2026-07-18' },
   { id: '2', title: 'Fix API context middleware bug', status: 'In Progress', priority: 'High', date: '2026-07-19' },
@@ -74,7 +87,7 @@ export const AppProvider = ({ children }) => {
   const addTask = (task) => {
     setTasks((prev) => [
       ...prev,
-      { ...task, tags: normalizeTags(task.tags), id: Date.now().toString() },
+      { ...task, tags: normalizeTags(task.tags), id: createId() },
     ]);
   };
 
@@ -123,7 +136,7 @@ export const AppProvider = ({ children }) => {
       const source = prev[index];
       const copy = {
         ...source,
-        id: Date.now().toString(),
+        id: createId(),
         // A copy is work still to do, whatever became of the original, and
         // it is created now rather than whenever the original was.
         status: 'Pending',
@@ -142,6 +155,25 @@ export const AppProvider = ({ children }) => {
 
       return next;
     });
+  };
+
+  // Work arrives from somewhere else more often than a task manager likes to
+  // admit — a spreadsheet a client sent, a backlog exported from whatever the
+  // team used before, or this app's own CSV carried between two machines.
+  // Until now the only way in was typing it all again.
+  //
+  // The rows arrive already cleaned by the CSV reader; what this owns is
+  // giving them ids nothing else holds, and putting them at the end rather
+  // than interleaving a stranger's list with work already in progress.
+  const importTasks = (incoming) => {
+    if (!Array.isArray(incoming) || incoming.length === 0) return 0;
+
+    setTasks((prev) => [
+      ...prev,
+      ...incoming.map((task) => ({ ...task, id: createId() })),
+    ]);
+
+    return incoming.length;
   };
 
   const deleteTask = (id) => {
@@ -240,6 +272,7 @@ export const AppProvider = ({ children }) => {
         theme,
         toggleTheme,
         addTask,
+        importTasks,
         duplicateTask,
         updateTask,
         updateTaskStatus,
