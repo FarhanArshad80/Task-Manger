@@ -1,4 +1,5 @@
 import { normalizeTags, tagsToText } from './tags';
+import { normalizeRepeat, REPEAT_NONE, REPEAT_VALUES } from './recurrence';
 
 // The columns a spreadsheet actually wants, in the order the table shows
 // them. `read` returns a plain string; the quoting rules below are the only
@@ -10,6 +11,17 @@ const COLUMNS = [
   { header: 'Created', read: (task) => task.date || '' },
   { header: 'Due', read: (task) => task.deadline || '' },
   { header: 'Tags', read: (task) => tagsToText(task.tags) },
+  // Written as the schedule's own name rather than a label, so a file can be
+  // round-tripped through a spreadsheet and still come back as a schedule.
+  // A one-off leaves the cell empty instead of saying "none" in every row.
+  {
+    header: 'Repeat',
+    read: (task) => {
+      const repeat = normalizeRepeat(task.repeat);
+
+      return repeat === REPEAT_NONE ? '' : repeat;
+    },
+  },
 ];
 
 // A field needs quoting if it contains a comma, a quote or a line break, and
@@ -198,6 +210,10 @@ export function csvToTasks(text, today = new Date().toLocaleDateString('en-CA'))
       // No due date is a real answer and has to survive as null.
       deadline: DATE_KEY.test(due) ? due : null,
       tags: normalizeTags(read(row, 'Tags')),
+      // An unrecognised schedule becomes a one-off. Importing a task that
+      // repeats on terms this app cannot honour would leave it silently
+      // never coming back.
+      repeat: matchOption(read(row, 'Repeat'), REPEAT_VALUES, REPEAT_NONE),
     });
   }
 

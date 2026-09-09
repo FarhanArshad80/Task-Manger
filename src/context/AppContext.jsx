@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { normalizeTags } from '../utils/tags';
+import { isRepeating, normalizeRepeat, nextOccurrence, REPEAT_NONE } from '../utils/recurrence';
 
 export const AppContext = createContext();
 
@@ -87,14 +88,49 @@ export const AppProvider = ({ children }) => {
   const addTask = (task) => {
     setTasks((prev) => [
       ...prev,
-      { ...task, tags: normalizeTags(task.tags), id: createId() },
+      {
+        ...task,
+        tags: normalizeTags(task.tags),
+        repeat: normalizeRepeat(task.repeat),
+        id: createId(),
+      },
     ]);
   };
 
+  // Completing a repeating task is the one status change that creates work
+  // rather than only closing it: the standing job is not finished, it is due
+  // again. The next occurrence is inserted directly behind the one just
+  // ticked off, so the row appears where the eye already is.
+  //
+  // Both the single and the bulk path go through here, because ticking off
+  // twelve weekly chores by checkbox has to leave twelve next occurrences,
+  // exactly as ticking them off one at a time would.
+  const applyStatus = (prev, target, newStatus) => {
+    const today = new Date().toLocaleDateString('en-CA');
+    const next = [];
+
+    for (const task of prev) {
+      if (!target.has(task.id)) {
+        next.push(task);
+        continue;
+      }
+
+      const updated = { ...task, status: newStatus };
+      next.push(updated);
+
+      // Only on the crossing into Completed. Re-confirming a status a task
+      // already holds is a no-op everywhere else in the app, and here it
+      // would quietly mint a duplicate every time it happened.
+      if (newStatus === 'Completed' && task.status !== 'Completed' && isRepeating(task)) {
+        next.push(nextOccurrence(updated, today, createId));
+      }
+    }
+
+    return next;
+  };
+
   const updateTaskStatus = (id, newStatus) => {
-    setTasks((prev) =>
-      prev.map((task) => (task.id === id ? { ...task, status: newStatus } : task))
-    );
+    setTasks((prev) => applyStatus(prev, new Set([id]), newStatus));
   };
 
   // Status was the only thing a task could change its mind about. A typo in
@@ -119,6 +155,9 @@ export const AppProvider = ({ children }) => {
           // Tags are only touched when the edit actually mentions them, so a
           // status change from elsewhere cannot quietly strip them.
           tags: 'tags' in changes ? normalizeTags(changes.tags) : task.tags || [],
+          // Same rule for the schedule: an edit that says nothing about
+          // repeating leaves a standing job standing.
+          repeat: 'repeat' in changes ? normalizeRepeat(changes.repeat) : normalizeRepeat(task.repeat),
         };
       })
     );
@@ -145,6 +184,10 @@ export const AppProvider = ({ children }) => {
         // task — inheriting it would file half these copies as overdue on
         // the day they are made.
         deadline: null,
+        // A copy is a one-off taken from a standing job, not a second
+        // standing job. Two tasks on the same schedule would each spawn
+        // their own next occurrence and the board would double every cycle.
+        repeat: REPEAT_NONE,
         tags: [...(source.tags || [])],
       };
 
@@ -190,9 +233,7 @@ export const AppProvider = ({ children }) => {
   const updateTasksStatus = (ids, newStatus) => {
     const target = new Set(ids);
 
-    setTasks((prev) =>
-      prev.map((task) => (target.has(task.id) ? { ...task, status: newStatus } : task))
-    );
+    setTasks((prev) => applyStatus(prev, target, newStatus));
   };
 
   // Priority is the field that gets rewritten in batches — a sprint slips

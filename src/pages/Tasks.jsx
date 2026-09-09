@@ -3,6 +3,7 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import TaskTable from '../components/data/TaskTable';
 import { AppContext } from '../context/AppContext';
+import { REPEAT_OPTIONS, REPEAT_NONE } from '../utils/recurrence';
 
 const Tasks = () => {
   const { addTask } = useContext(AppContext);
@@ -10,6 +11,7 @@ const Tasks = () => {
   const [deadline, setDeadline] = useState('');
   const [priority, setPriority] = useState('Medium');
   const [tags, setTags] = useState('');
+  const [repeat, setRepeat] = useState(REPEAT_NONE);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -21,11 +23,13 @@ const Tasks = () => {
       date: new Date().toISOString().split('T')[0], // created date
       deadline: deadline || null,                    // due date, shown on Calendar
       tags,                                          // cleaned and capped by the context
+      repeat,                                        // standing work comes back when it is ticked off
     });
     setTitle('');
     setDeadline('');
     setPriority('Medium');
     setTags('');
+    setRepeat(REPEAT_NONE);
   };
 
   return (
@@ -66,6 +70,18 @@ const Tasks = () => {
             aria-label="Tags, comma separated"
             className="sm:w-52 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
           />
+          <select
+            value={repeat}
+            onChange={(e) => setRepeat(e.target.value)}
+            aria-label="Repeat schedule"
+            className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+          >
+            {REPEAT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value} className="bg-white dark:bg-slate-800">
+                {option.label}
+              </option>
+            ))}
+          </select>
           <Button type="submit" disabled={!title.trim()}>
             Deploy Task
           </Button>

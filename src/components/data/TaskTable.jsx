@@ -1,9 +1,10 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppContext } from '../../context/AppContext';
 import { collectTags, hasTag, tagsToText } from '../../utils/tags';
+import { REPEAT_OPTIONS, REPEAT_NONE, normalizeRepeat, repeatLabel } from '../../utils/recurrence';
 import { csvFilename, csvToTasks, downloadCsv, tasksToCsv } from '../../utils/csv';
 import Badge from '../ui/Badge';
-import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download, Copy, CalendarOff, Upload } from 'lucide-react';
+import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download, Copy, CalendarOff, Upload, Repeat } from 'lucide-react';
 
 const STATUSES = ['Pending', 'In Progress', 'Completed'];
 const PRIORITIES = ['High', 'Medium', 'Low'];
@@ -73,7 +74,9 @@ const TaskTable = () => {
   const [dueFilter, setDueFilter] = useState(ALL);
   const [sort, setSort] = useState({ key: null, direction: 'asc' });
   const [editingId, setEditingId] = useState(null);
-  const [draft, setDraft] = useState({ title: '', deadline: '', priority: 'Medium', tags: '' });
+  const [draft, setDraft] = useState({
+    title: '', deadline: '', priority: 'Medium', tags: '', repeat: REPEAT_NONE,
+  });
   const [selected, setSelected] = useState(() => new Set());
   // What the last import did. Reading a file is the one action here with no
   // visible result of its own — thirty new rows at the bottom of a filtered
@@ -295,6 +298,7 @@ const TaskTable = () => {
       deadline: task.deadline || '',
       priority: task.priority || 'Medium',
       tags: tagsToText(task.tags),
+      repeat: normalizeRepeat(task.repeat),
     });
   };
 
@@ -645,10 +649,37 @@ const TaskTable = () => {
                       aria-label="Tags, comma separated"
                       className={`w-full ${controlClass}`}
                     />
+                    <select
+                      value={draft.repeat}
+                      onChange={(e) => setDraft({ ...draft, repeat: e.target.value })}
+                      onKeyDown={handleEditKeyDown}
+                      aria-label="Repeat schedule"
+                      className={`w-full ${controlClass}`}
+                    >
+                      {REPEAT_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value} className="bg-white dark:bg-slate-800">
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 ) : (
                   <div className="space-y-1">
-                    <span className="block truncate">{item.title}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="truncate">{item.title}</span>
+                      {/* Said on the row rather than only in the editor: the
+                          reason this task will be back tomorrow is not
+                          something anyone should have to open it to find. */}
+                      {repeatLabel(item.repeat) && (
+                        <span
+                          title={`Comes back ${repeatLabel(item.repeat).toLowerCase()} once completed`}
+                          className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:bg-slate-700/60 dark:text-slate-300"
+                        >
+                          <Repeat className="h-3 w-3" />
+                          {repeatLabel(item.repeat)}
+                        </span>
+                      )}
+                    </div>
                     {item.tags?.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {item.tags.map((tag) => (
