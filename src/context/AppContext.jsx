@@ -115,7 +115,22 @@ export const AppProvider = ({ children }) => {
         continue;
       }
 
-      const updated = { ...task, status: newStatus };
+      // When a task was finished, not just that it was. The analytics page
+      // has been asking every task for a `completedAt` since it was written
+      // and no path in the app ever set one, so its on-time figure could
+      // only ever read "—".
+      //
+      // Moving a task back out of Completed clears it again: it is not
+      // finished any more, and a stale date would go on counting toward an
+      // accuracy figure and a streak that nothing on the board supports.
+      const updated = {
+        ...task,
+        status: newStatus,
+        completedAt:
+          newStatus === 'Completed'
+            ? task.completedAt || today
+            : null,
+      };
       next.push(updated);
 
       // Only on the crossing into Completed. Re-confirming a status a task
@@ -179,6 +194,8 @@ export const AppProvider = ({ children }) => {
         // A copy is work still to do, whatever became of the original, and
         // it is created now rather than whenever the original was.
         status: 'Pending',
+        // Which is why it cannot inherit the day the original was finished.
+        completedAt: null,
         date: new Date().toLocaleDateString('en-CA'),
         // The deadline belonged to that occurrence, not to the shape of the
         // task — inheriting it would file half these copies as overdue on

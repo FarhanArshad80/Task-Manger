@@ -96,6 +96,9 @@ export function nextOccurrence(task, today, createId) {
     ...task,
     id: createId(),
     status: 'Pending',
+    // The predecessor's completion date belongs to the predecessor. Carried
+    // over, it would report this occurrence as finished before it existed.
+    completedAt: null,
     // Created now, not whenever the first occurrence was — this one came
     // into being the moment its predecessor was ticked off.
     date: today,

@@ -11,6 +11,9 @@ const COLUMNS = [
   { header: 'Created', read: (task) => task.date || '' },
   { header: 'Due', read: (task) => task.deadline || '' },
   { header: 'Tags', read: (task) => tagsToText(task.tags) },
+  // Empty for anything unfinished, which is most of the file - "none" in
+  // every second row would be noise.
+  { header: 'Completed', read: (task) => task.completedAt || '' },
   // Written as the schedule's own name rather than a label, so a file can be
   // round-tripped through a spreadsheet and still come back as a schedule.
   // A one-off leaves the cell empty instead of saying "none" in every row.
@@ -198,6 +201,7 @@ export function csvToTasks(text, today = new Date().toLocaleDateString('en-CA'))
 
     const created = read(row, 'Created');
     const due = read(row, 'Due');
+    const finished = read(row, 'Completed');
 
     tasks.push({
       title,
@@ -209,6 +213,13 @@ export function csvToTasks(text, today = new Date().toLocaleDateString('en-CA'))
       date: DATE_KEY.test(created) ? created : today,
       // No due date is a real answer and has to survive as null.
       deadline: DATE_KEY.test(due) ? due : null,
+      // Only believed on a row that says it is finished. A completion date
+      // against a Pending task is a contradiction, and the status column is
+      // the one the rest of the app reads.
+      completedAt:
+        DATE_KEY.test(finished) && matchOption(read(row, 'Status'), STATUSES, 'Pending') === 'Completed'
+          ? finished
+          : null,
       tags: normalizeTags(read(row, 'Tags')),
       // An unrecognised schedule becomes a one-off. Importing a task that
       // repeats on terms this app cannot honour would leave it silently
