@@ -16,12 +16,37 @@ function getTaskDate(task) {
   return task.deadline || task.dueDate || task.date || null;
 }
 
+const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
+
 // Normalize "2026-07-19" or a full ISO string to a plain YYYY-MM-DD key.
+//
+// Local time throughout. This used to go through toISOString(), which reports
+// the UTC day of an instant - and a Date built from local year/month/day is
+// midnight *here*, which is the previous day in UTC anywhere east of it. So
+// the grid was labelling its own cells with yesterday's key east of Greenwich
+// and drawing every task a day out of place, while west of it the today
+// marker jumped to tomorrow's cell each evening.
+//
+// A date the app already stores as a plain key is not passed through Date at
+// all. It has no time and no zone to interpret; parsing it only creates the
+// chance of interpreting it wrong.
 function toDateKey(value) {
   if (!value) return null;
-  const d = new Date(value);
-  if (isNaN(d.getTime())) return null;
-  return d.toISOString().split('T')[0];
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toLocaleDateString('en-CA');
+  }
+
+  const text = String(value);
+
+  if (DATE_KEY.test(text)) return text;
+
+  // Anything else - a full ISO timestamp from an older record, or a date
+  // written some other way - is an instant, and the day it falls on is the
+  // day it falls on here.
+  const parsed = new Date(text);
+
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toLocaleDateString('en-CA');
 }
 
 const Calendar = () => {

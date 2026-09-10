@@ -20,7 +20,10 @@ const Tasks = () => {
       title,
       status: 'Pending',
       priority,                                      // drives Calendar colours and the urgent count
-      date: new Date().toISOString().split('T')[0], // created date
+      // The local day, like every other date this app writes. toISOString()
+      // reports the UTC one, so a task created at eleven at night was filed
+      // as tomorrow's east of Greenwich and this morning's west of it.
+      date: new Date().toLocaleDateString('en-CA'), // created date
       deadline: deadline || null,                    // due date, shown on Calendar
       tags,                                          // cleaned and capped by the context
       repeat,                                        // standing work comes back when it is ticked off
