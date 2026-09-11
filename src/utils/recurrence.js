@@ -8,6 +8,8 @@
 // board always holds exactly one live copy of a standing job, never a row of
 // future ones cluttering up the list weeks ahead of being actionable.
 
+import { resetSteps } from './steps';
+
 export const REPEAT_NONE = 'none';
 
 export const REPEAT_OPTIONS = [
@@ -99,6 +101,10 @@ export function nextOccurrence(task, today, createId) {
     // The predecessor's completion date belongs to the predecessor. Carried
     // over, it would report this occurrence as finished before it existed.
     completedAt: null,
+    // The checklist comes back blank. Last week's report is written; this
+    // week's is not, and a repeating job whose steps arrived pre-ticked
+    // would be a checklist nobody could use twice.
+    steps: resetSteps(task.steps),
     // Created now, not whenever the first occurrence was — this one came
     // into being the moment its predecessor was ticked off.
     date: today,

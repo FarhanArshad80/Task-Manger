@@ -1,5 +1,6 @@
 import { normalizeTags, tagsToText } from './tags';
 import { normalizeRepeat, REPEAT_NONE, REPEAT_VALUES } from './recurrence';
+import { stepsToText, textToSteps } from './steps';
 
 // The columns a spreadsheet actually wants, in the order the table shows
 // them. `read` returns a plain string; the quoting rules below are the only
@@ -14,6 +15,10 @@ const COLUMNS = [
   // Empty for anything unfinished, which is most of the file - "none" in
   // every second row would be noise.
   { header: 'Completed', read: (task) => task.completedAt || '' },
+  // "[x] done thing | [ ] the next one". Checkbox notation because it still
+  // reads as a checklist to a person opening the file, and a pipe because a
+  // comma would have the writer quoting almost every row.
+  { header: 'Steps', read: (task) => stepsToText(task.steps) },
   // Written as the schedule's own name rather than a label, so a file can be
   // round-tripped through a spreadsheet and still come back as a schedule.
   // A one-off leaves the cell empty instead of saying "none" in every row.
@@ -225,6 +230,10 @@ export function csvToTasks(text, today = new Date().toLocaleDateString('en-CA'))
       // repeats on terms this app cannot honour would leave it silently
       // never coming back.
       repeat: matchOption(read(row, 'Repeat'), REPEAT_VALUES, REPEAT_NONE),
+      // A hand-written list with no checkboxes at all reads as steps nobody
+      // has started, which is what somebody typing one into a spreadsheet
+      // column means by it.
+      steps: textToSteps(read(row, 'Steps')),
     });
   }
 

@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { normalizeTags } from '../utils/tags';
 import { isRepeating, normalizeRepeat, nextOccurrence, REPEAT_NONE } from '../utils/recurrence';
+import { makeStep, normalizeSteps, resetSteps } from '../utils/steps';
 
 export const AppContext = createContext();
 
@@ -92,6 +93,7 @@ export const AppProvider = ({ children }) => {
         ...task,
         tags: normalizeTags(task.tags),
         repeat: normalizeRepeat(task.repeat),
+        steps: normalizeSteps(task.steps),
         id: createId(),
       },
     ]);
@@ -173,6 +175,10 @@ export const AppProvider = ({ children }) => {
           // Same rule for the schedule: an edit that says nothing about
           // repeating leaves a standing job standing.
           repeat: 'repeat' in changes ? normalizeRepeat(changes.repeat) : normalizeRepeat(task.repeat),
+          // And for the checklist. Steps are edited through their own
+          // actions below, so a title change arriving here must not flatten
+          // them on its way past.
+          steps: 'steps' in changes ? normalizeSteps(changes.steps) : normalizeSteps(task.steps),
         };
       })
     );
@@ -205,6 +211,10 @@ export const AppProvider = ({ children }) => {
         // standing job. Two tasks on the same schedule would each spawn
         // their own next occurrence and the board would double every cycle.
         repeat: REPEAT_NONE,
+        // The steps come across, none of them ticked. That is the whole
+        // value of duplicating a checklist - the shape of the job, ready to
+        // be done again.
+        steps: resetSteps(source.steps),
         tags: [...(source.tags || [])],
       };
 
@@ -234,6 +244,53 @@ export const AppProvider = ({ children }) => {
     ]);
 
     return incoming.length;
+  };
+
+  // Steps are edited one at a time rather than by replacing the list, so two
+  // things being ticked in quick succession cannot overwrite each other with
+  // a stale copy of the checklist.
+  const addStep = (taskId, text) => {
+    const step = makeStep(text);
+
+    if (!step) return;
+
+    setTasks((prev) =>
+      prev.map((task) => {
+        if (task.id !== taskId) return task;
+
+        const steps = normalizeSteps(task.steps);
+
+        return { ...task, steps: normalizeSteps([...steps, step]) };
+      })
+    );
+  };
+
+  const toggleStep = (taskId, stepId) => {
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              steps: normalizeSteps(task.steps).map((step) =>
+                step.id === stepId ? { ...step, done: !step.done } : step
+              ),
+            }
+          : task
+      )
+    );
+  };
+
+  const removeStep = (taskId, stepId) => {
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              steps: normalizeSteps(task.steps).filter((step) => step.id !== stepId),
+            }
+          : task
+      )
+    );
   };
 
   const deleteTask = (id) => {
@@ -333,6 +390,9 @@ export const AppProvider = ({ children }) => {
         importTasks,
         duplicateTask,
         updateTask,
+        addStep,
+        toggleStep,
+        removeStep,
         updateTaskStatus,
         updateTasksStatus,
         updateTasksPriority,

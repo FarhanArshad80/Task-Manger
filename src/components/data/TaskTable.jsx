@@ -2,9 +2,10 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppContext } from '../../context/AppContext';
 import { collectTags, hasTag, tagsToText } from '../../utils/tags';
 import { REPEAT_OPTIONS, REPEAT_NONE, normalizeRepeat, repeatLabel } from '../../utils/recurrence';
+import { MAX_STEPS, normalizeSteps, stepProgress } from '../../utils/steps';
 import { csvFilename, csvToTasks, downloadCsv, tasksToCsv } from '../../utils/csv';
 import Badge from '../ui/Badge';
-import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download, Copy, CalendarOff, Upload, Repeat } from 'lucide-react';
+import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download, Copy, CalendarOff, Upload, Repeat, ListChecks, Plus } from 'lucide-react';
 
 const STATUSES = ['Pending', 'In Progress', 'Completed'];
 const PRIORITIES = ['High', 'Medium', 'Low'];
@@ -66,6 +67,7 @@ const TaskTable = () => {
   const {
     tasks, updateTask, updateTaskStatus, updateTasksStatus, updateTasksPriority,
     updateTasksDeadline, duplicateTask, deleteTask, deleteTasks, importTasks,
+    addStep, toggleStep, removeStep,
   } = useContext(AppContext);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL);
@@ -78,6 +80,11 @@ const TaskTable = () => {
     title: '', deadline: '', priority: 'Medium', tags: '', repeat: REPEAT_NONE,
   });
   const [selected, setSelected] = useState(() => new Set());
+  // Which rows have their checklist open, and what is being typed into it.
+  // Open by row rather than one at a time: working through two related jobs
+  // usually means having both lists in front of you.
+  const [openSteps, setOpenSteps] = useState(() => new Set());
+  const [stepDraft, setStepDraft] = useState({});
   // What the last import did. Reading a file is the one action here with no
   // visible result of its own — thirty new rows at the bottom of a filtered
   // table can look exactly like nothing happening.
@@ -318,6 +325,30 @@ const TaskTable = () => {
     } else if (event.key === 'Escape') {
       setEditingId(null);
     }
+  };
+
+  const toggleSteps = (id) => {
+    setOpenSteps((current) => {
+      const next = new Set(current);
+
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+
+      return next;
+    });
+  };
+
+  const submitStep = (taskId) => (event) => {
+    event.preventDefault();
+
+    const text = (stepDraft[taskId] || '').trim();
+
+    if (!text) return;
+
+    addStep(taskId, text);
+    // Cleared rather than left behind: the next step is almost always typed
+    // straight after this one, into the same box.
+    setStepDraft((current) => ({ ...current, [taskId]: '' }));
   };
 
   const isFiltered =
@@ -610,9 +641,14 @@ const TaskTable = () => {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-          {sortedTasks.map((item) => (
+          {sortedTasks.map((item) => {
+            const steps = normalizeSteps(item.steps);
+            const progress = stepProgress(steps);
+            const stepsOpen = openSteps.has(item.id);
+
+            return (
+            <React.Fragment key={item.id}>
             <tr
-              key={item.id}
               className={`transition-colors ${
                 selected.has(item.id)
                   ? 'bg-indigo-50/70 dark:bg-indigo-500/10'
@@ -670,6 +706,26 @@ const TaskTable = () => {
                       {/* Said on the row rather than only in the editor: the
                           reason this task will be back tomorrow is not
                           something anyone should have to open it to find. */}
+                      {/* How far through the job this is - which the status
+                          flag cannot say, since a task is Pending whether
+                          one step is left or nine. Doubles as the control
+                          that opens the list. */}
+                      {progress && (
+                        <button
+                          type="button"
+                          onClick={() => toggleSteps(item.id)}
+                          aria-expanded={stepsOpen}
+                          title={`${progress.done} of ${progress.total} steps done`}
+                          className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                            progress.complete
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                              : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700/60 dark:text-slate-300 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          <ListChecks className="h-3 w-3" />
+                          {progress.done}/{progress.total}
+                        </button>
+                      )}
                       {repeatLabel(item.repeat) && (
                         <span
                           title={`Comes back ${repeatLabel(item.repeat).toLowerCase()} once completed`}
@@ -800,6 +856,24 @@ const TaskTable = () => {
                     >
                       <Copy className="h-4 w-4" />
                     </button>
+                    {/* The way in for a task that has no steps yet. The
+                        badge in the title opens the list once there is one
+                        to open, but it cannot be the only door — a task
+                        with nothing broken down would have no handle at
+                        all. */}
+                    <button
+                      onClick={() => toggleSteps(item.id)}
+                      aria-expanded={stepsOpen}
+                      aria-label={`${stepsOpen ? 'Hide' : 'Show'} the steps in "${item.title}"`}
+                      title={progress ? 'Steps' : 'Break this into steps'}
+                      className={`transition-colors p-1 rounded ${
+                        stepsOpen
+                          ? 'text-indigo-500'
+                          : 'text-slate-400 hover:text-indigo-500'
+                      }`}
+                    >
+                      <ListChecks className="h-4 w-4" />
+                    </button>
                     <button
                       onClick={() => deleteTask(item.id)}
                       aria-label={`Delete "${item.title}"`}
@@ -811,7 +885,75 @@ const TaskTable = () => {
                 )}
               </td>
             </tr>
-          ))}
+
+            {/* The checklist, in a row of its own under its task. Inside the
+                title cell it would squeeze the list into a column sized for
+                a line of text; as a row it has the width the steps need. */}
+            {stepsOpen && (
+              <tr className="bg-slate-50/60 dark:bg-slate-800/30">
+                <td />
+                <td colSpan={6} className="px-4 pb-4">
+                  <ul className="space-y-1.5">
+                    {steps.map((step) => (
+                      <li key={step.id} className="group/step flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={step.done}
+                          onChange={() => toggleStep(item.id, step.id)}
+                          id={`step-${step.id}`}
+                          className="h-3.5 w-3.5 cursor-pointer accent-indigo-500"
+                        />
+                        {/* Struck through rather than removed. A finished
+                            step is part of the account of the job, and a
+                            list that empties as it goes ends up saying
+                            nothing was ever done. */}
+                        <label
+                          htmlFor={`step-${step.id}`}
+                          className={`cursor-pointer text-sm ${
+                            step.done
+                              ? 'text-slate-400 line-through dark:text-slate-500'
+                              : 'text-slate-600 dark:text-slate-300'
+                          }`}
+                        >
+                          {step.text}
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => removeStep(item.id, step.id)}
+                          aria-label={`Remove step "${step.text}"`}
+                          className="ml-auto rounded p-1 text-slate-300 opacity-0 transition-opacity hover:text-rose-500 group-hover/step:opacity-100 focus-visible:opacity-100"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {steps.length < MAX_STEPS ? (
+                    <form onSubmit={submitStep(item.id)} className="mt-2 flex items-center gap-2">
+                      <Plus className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                      <input
+                        type="text"
+                        value={stepDraft[item.id] || ''}
+                        onChange={(e) =>
+                          setStepDraft((current) => ({ ...current, [item.id]: e.target.value }))
+                        }
+                        placeholder="Add a step"
+                        aria-label={`Add a step to "${item.title}"`}
+                        className="w-full max-w-sm bg-transparent text-sm placeholder:text-slate-400 focus:outline-none"
+                      />
+                    </form>
+                  ) : (
+                    <p className="mt-2 text-xs text-slate-400">
+                      That is {MAX_STEPS} steps — past this it is two tasks.
+                    </p>
+                  )}
+                </td>
+              </tr>
+            )}
+            </React.Fragment>
+          );
+          })}
           {sortedTasks.length === 0 && (
             <tr>
               <td colSpan={7} className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
