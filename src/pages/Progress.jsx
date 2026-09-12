@@ -3,12 +3,74 @@ import Card from '../components/ui/Card';
 import ProgressChart from '../components/data/ProgressChart';
 import { AppContext } from '../context/AppContext';
 import { completionStreak } from '../utils/streak';
+import { deliveryRate, onTimeRate, momentumRate } from '../utils/goals';
 import { Target, TrendingUp, Award, Flame } from 'lucide-react';
+
+// One card per measure. `read` returns null when there is nothing behind the
+// figure yet, and `blank` is what to say instead — never a 0% bar, which
+// reads as a failure where the honest answer is "nothing to go on".
+const GOAL_CARDS = [
+  {
+    id: 'delivery',
+    icon: Target,
+    tone: 'text-indigo-500',
+    bar: 'bg-indigo-500',
+    title: 'Delivered',
+    read: (tasks) => {
+      const rate = deliveryRate(tasks);
+
+      return rate && { pct: rate.pct, text: `${rate.done} of ${rate.total} tasks finished.` };
+    },
+    blank: 'Nothing on the board yet.',
+  },
+  {
+    id: 'ontime',
+    icon: Award,
+    tone: 'text-emerald-500',
+    bar: 'bg-emerald-500',
+    title: 'On time',
+    read: (tasks) => {
+      const rate = onTimeRate(tasks);
+
+      return (
+        rate && {
+          pct: rate.pct,
+          text: `${rate.onTime} of ${rate.judged} finished on or before the deadline.`,
+        }
+      );
+    },
+    // Only tasks with both a deadline and a completion date can be judged,
+    // and a board that does not use deadlines is not a board that is late.
+    blank: 'No finished task has had a deadline to measure against.',
+  },
+  {
+    id: 'momentum',
+    icon: TrendingUp,
+    tone: 'text-amber-500',
+    bar: 'bg-amber-500',
+    title: 'Momentum',
+    read: (tasks) => {
+      const rate = momentumRate(tasks);
+
+      return (
+        rate && {
+          pct: rate.pct,
+          text: `Something finished on ${rate.active} of the last ${rate.window} days.`,
+        }
+      );
+    },
+    blank: 'Finish a task to start measuring.',
+  },
+];
 
 const Progress = () => {
   const { tasks } = useContext(AppContext);
   const completedCount = tasks.filter(t => t.status === 'Completed').length;
   const streak = useMemo(() => completionStreak(tasks), [tasks]);
+  const goals = useMemo(
+    () => GOAL_CARDS.map((card) => ({ ...card, result: card.read(tasks) })),
+    [tasks]
+  );
   
   return (
     <div className="space-y-6">
@@ -56,30 +118,27 @@ const Progress = () => {
 
       {/* Goal Strategy Parameters */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="space-y-2">
-          <div className="text-indigo-500"><Target className="h-5 w-5" /></div>
-          <h4 className="text-sm font-bold">Daily Objectives</h4>
-          <p className="text-xs text-slate-400">Maintain over 80% delivery across scheduled tasks.</p>
-          <div className="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-2">
-            <div className="bg-indigo-500 h-1.5 rounded-full w-[85%]"></div>
-          </div>
-        </Card>
-        <Card className="space-y-2">
-          <div className="text-amber-500"><TrendingUp className="h-5 w-5" /></div>
-          <h4 className="text-sm font-bold">Velocity Threshold</h4>
-          <p className="text-xs text-slate-400">Calculate cycle speed from initialization to completion flags.</p>
-          <div className="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-2">
-            <div className="bg-amber-500 h-1.5 rounded-full w-[70%]"></div>
-          </div>
-        </Card>
-        <Card className="space-y-2">
-          <div className="text-emerald-500"><Award className="h-5 w-5" /></div>
-          <h4 className="text-sm font-bold">Quality Standard</h4>
-          <p className="text-xs text-slate-400">Zero critical rollbacks over running components.</p>
-          <div className="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-2">
-            <div className="bg-emerald-500 h-1.5 rounded-full w-[95%]"></div>
-          </div>
-        </Card>
+        {goals.map(({ id, icon: Icon, tone, bar, title, blank, result }) => (
+          <Card key={id} className="space-y-2">
+            <div className={tone}><Icon className="h-5 w-5" /></div>
+            <div className="flex items-baseline justify-between">
+              <h4 className="text-sm font-bold">{title}</h4>
+              <span className="text-sm font-bold font-mono text-slate-400">
+                {result ? `${result.pct}%` : '—'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">{result ? result.text : blank}</p>
+            <div className="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-2">
+              {/* Width is inline because the percentage is a number, not one
+                  of a fixed set of classes — Tailwind can only ship the ones
+                  it can see in the source. */}
+              <div
+                className={`${bar} h-1.5 rounded-full transition-all duration-500`}
+                style={{ width: `${result ? result.pct : 0}%` }}
+              />
+            </div>
+          </Card>
+        ))}
       </div>
     </div>
   );
