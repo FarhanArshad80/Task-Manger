@@ -1,9 +1,20 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import Card from '../components/ui/Card';
 import ProgressChart from '../components/data/ProgressChart';
 import TaskTable from '../components/data/TaskTable';
 import { AppContext } from '../context/AppContext';
+import { buildBriefing } from '../utils/briefing';
 import { CheckCircle2, Clock, AlertCircle, Zap } from 'lucide-react';
+
+// Each note is coloured by what it is asking for rather than by where it
+// happens to sit in the list, so a board with nothing late never shows a red
+// stripe and a run of good days never shows an amber one.
+const NOTE_TONES = {
+  late: { bar: 'border-rose-500', mark: '⏰' },
+  now: { bar: 'border-amber-500', mark: '⚙️' },
+  ahead: { bar: 'border-indigo-500', mark: '📋' },
+  good: { bar: 'border-emerald-500', mark: '✅' },
+};
 
 const Dashboard = () => {
   const { tasks } = useContext(AppContext);
@@ -12,6 +23,7 @@ const Dashboard = () => {
   const completed = tasks.filter(t => t.status === 'Completed').length;
   const active = tasks.filter(t => t.status === 'In Progress').length;
   const urgent = tasks.filter(t => t.priority === 'High' && t.status !== 'Completed').length;
+  const notes = useMemo(() => buildBriefing(tasks), [tasks]);
 
   return (
     <div className="space-y-6">
@@ -63,9 +75,20 @@ const Dashboard = () => {
 
         <Card>
           <h3 className="text-base font-bold mb-2">Quick System Notes</h3>
+          <p className="text-xs text-slate-400 mb-3">What the queue says right now.</p>
           <ul className="text-xs space-y-2 text-slate-600 dark:text-slate-300">
-            <li className="p-2 rounded bg-slate-50 dark:bg-slate-700/50 border-l-2 border-indigo-500">⚡ Database links verified. Memory allocation performing efficiently.</li>
-            <li className="p-2 rounded bg-slate-50 dark:bg-slate-700/50 border-l-2 border-amber-500">⚙️ Review the pending context middleware bugs before production staging.</li>
+            {notes.map((note) => {
+              const tone = NOTE_TONES[note.tone] || NOTE_TONES.ahead;
+
+              return (
+                <li
+                  key={note.id}
+                  className={`p-2 rounded bg-slate-50 dark:bg-slate-700/50 border-l-2 ${tone.bar}`}
+                >
+                  {tone.mark} {note.text}
+                </li>
+              );
+            })}
           </ul>
         </Card>
       </div>
