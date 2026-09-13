@@ -11,9 +11,17 @@ const priorityStyle = {
   Low: 'bg-emerald-500/20 text-emerald-400 border-emerald-500',
 };
 
-// Pull whichever due-date field the task actually has.
+// The day a task is due, and nothing else.
+//
+// `date` used to be the last fallback here, but `date` is when the task was
+// *created* — the add form stamps it with today. So every task without a
+// deadline was drawn on the calendar on the day it was typed in, looking
+// exactly like work due that day, and the day panel listed it as due. A task
+// with no deadline has no day on a calendar of deadlines.
+//
+// `dueDate` stays: it is the field older imports used for the same thing.
 function getTaskDate(task) {
-  return task.deadline || task.dueDate || task.date || null;
+  return task.deadline || task.dueDate || null;
 }
 
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
