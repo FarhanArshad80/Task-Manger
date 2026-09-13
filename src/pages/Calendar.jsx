@@ -49,6 +49,19 @@ function toDateKey(value) {
   return Number.isNaN(parsed.getTime()) ? null : parsed.toLocaleDateString('en-CA');
 }
 
+// "Thursday 17 September" for a stored key, built from its parts so the
+// label cannot land on a neighbouring day the way parsing "2026-09-17" as
+// UTC midnight would.
+function dayLabel(dateKey) {
+  const [y, m, d] = dateKey.split('-').map(Number);
+
+  return new Date(y, m - 1, d).toLocaleDateString('default', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+}
+
 const Calendar = () => {
   const { tasks = [] } = useContext(AppContext);
   const [cursor, setCursor] = useState(() => {
@@ -75,6 +88,13 @@ const Calendar = () => {
     });
     return map;
   }, [tasks]);
+
+  // The day being looked at. A cell has room for two titles, so any busier
+  // day ended in "+3 more" with nowhere to go to read them — the calendar
+  // could say a day was crowded but not what it was crowded with. Opens on
+  // today, which is the day most people came to check.
+  const [selectedKey, setSelectedKey] = useState(() => toDateKey(new Date()));
+  const selectedTasks = tasksByDate[selectedKey] || [];
 
   const goToPrevMonth = () => setCursor(new Date(year, month - 1, 1));
   const goToNextMonth = () => setCursor(new Date(year, month + 1, 1));
@@ -121,10 +141,16 @@ const Calendar = () => {
               const isToday = toDateKey(new Date()) === dateKey;
 
               return (
-                <div
+                <button
+                  type="button"
                   key={day}
-                  className={`aspect-square bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg p-2 transition-all flex flex-col justify-start gap-1 border overflow-hidden group ${
-                    isToday ? 'border-indigo-500' : 'border-slate-200/40 dark:border-slate-700/30'
+                  onClick={() => setSelectedKey(dateKey)}
+                  aria-pressed={selectedKey === dateKey}
+                  aria-label={`${dayLabel(dateKey)}: ${dayTasks.length} task${dayTasks.length === 1 ? '' : 's'}`}
+                  className={`aspect-square text-left bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg p-2 transition-all flex flex-col justify-start gap-1 border overflow-hidden group ${
+                    selectedKey === dateKey
+                      ? 'ring-2 ring-indigo-500/60 border-indigo-500'
+                      : isToday ? 'border-indigo-500' : 'border-slate-200/40 dark:border-slate-700/30'
                   }`}
                 >
                   <span className={`text-xs font-bold font-mono ${isToday ? 'text-indigo-500' : 'text-slate-400'} group-hover:text-indigo-500`}>
@@ -146,12 +172,55 @@ const Calendar = () => {
                       <div className="text-[9px] text-slate-400 pl-1">+{dayTasks.length - 2} more</div>
                     )}
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
         </div>
       </Card>
+
+      {/* Below the grid rather than in a popover: it stays put while the
+          month is paged through, and it is readable on a phone, where the
+          cells are too small to hold even one title. */}
+      {selectedKey && (
+        <Card>
+          <div className="flex items-baseline justify-between mb-3">
+            <h2 className="text-base font-bold">{dayLabel(selectedKey)}</h2>
+            <span className="text-xs text-slate-400">
+              {selectedTasks.length} task{selectedTasks.length === 1 ? '' : 's'}
+            </span>
+          </div>
+
+          {selectedTasks.length === 0 ? (
+            <p className="text-sm text-slate-400">Nothing is due on this day.</p>
+          ) : (
+            <ul className="space-y-2">
+              {selectedTasks.map((task) => {
+                const done = (task.status || '').toLowerCase() === 'completed';
+
+                return (
+                  <li
+                    key={task.id}
+                    className={`flex items-center justify-between gap-3 px-3 py-2 rounded-lg border-l-2 ${
+                      priorityStyle[task.priority] || priorityStyle.Medium
+                    }`}
+                  >
+                    {/* Finished work stays in the list, struck through: the
+                        day did have it, and hiding it would make a day that
+                        went well look empty. */}
+                    <span className={`text-sm font-medium truncate ${done ? 'line-through opacity-60' : ''}`}>
+                      {task.title}
+                    </span>
+                    <span className="text-[11px] whitespace-nowrap opacity-80">
+                      {task.priority || 'Medium'} · {task.status || 'Pending'}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Card>
+      )}
     </div>
   );
 };
