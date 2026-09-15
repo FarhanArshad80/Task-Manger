@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect } from 'react';
 import { normalizeTags } from '../utils/tags';
 import { isRepeating, normalizeRepeat, nextOccurrence, REPEAT_NONE } from '../utils/recurrence';
 import { makeStep, normalizeSteps, resetSteps } from '../utils/steps';
+import { capNote, normalizeNote } from '../utils/notes';
 
 export const AppContext = createContext();
 
@@ -94,6 +95,7 @@ export const AppProvider = ({ children }) => {
         tags: normalizeTags(task.tags),
         repeat: normalizeRepeat(task.repeat),
         steps: normalizeSteps(task.steps),
+        note: normalizeNote(task.note),
         id: createId(),
       },
     ]);
@@ -179,6 +181,9 @@ export const AppProvider = ({ children }) => {
           // actions below, so a title change arriving here must not flatten
           // them on its way past.
           steps: 'steps' in changes ? normalizeSteps(changes.steps) : normalizeSteps(task.steps),
+          // And for the note, which is written through its own action below
+          // — an edit that says nothing about it must leave it standing.
+          note: 'note' in changes ? normalizeNote(changes.note) : normalizeNote(task.note),
         };
       })
     );
@@ -215,6 +220,10 @@ export const AppProvider = ({ children }) => {
         // value of duplicating a checklist - the shape of the job, ready to
         // be done again.
         steps: resetSteps(source.steps),
+        // The note comes across untouched. It says what the job is, which is
+        // exactly what is being copied — unlike the deadline and the
+        // completion date, which belonged to that one occurrence.
+        note: normalizeNote(source.note),
         tags: [...(source.tags || [])],
       };
 
@@ -277,6 +286,22 @@ export const AppProvider = ({ children }) => {
             }
           : task
       )
+    );
+  };
+
+  // Written straight onto the task rather than through the row editor: the
+  // note is edited in a panel of its own, and routing it through `updateTask`
+  // would make every keystroke in it also re-normalize the title, the tags
+  // and the schedule from a draft nobody opened.
+  // `commit` is the difference between typing and having typed. Every
+  // keystroke only settles the line endings and holds the length; the full
+  // clean waits until the box is left, because trimming the ends mid-word
+  // would eat the space somebody just pressed.
+  const setTaskNote = (taskId, note, commit = false) => {
+    const next = commit ? normalizeNote(note) : capNote(note);
+
+    setTasks((prev) =>
+      prev.map((task) => (task.id === taskId ? { ...task, note: next } : task))
     );
   };
 
@@ -393,6 +418,7 @@ export const AppProvider = ({ children }) => {
         addStep,
         toggleStep,
         removeStep,
+        setTaskNote,
         updateTaskStatus,
         updateTasksStatus,
         updateTasksPriority,

@@ -3,9 +3,10 @@ import { AppContext } from '../../context/AppContext';
 import { collectTags, hasTag, tagsToText } from '../../utils/tags';
 import { REPEAT_OPTIONS, REPEAT_NONE, normalizeRepeat, repeatLabel } from '../../utils/recurrence';
 import { MAX_STEPS, normalizeSteps, stepProgress } from '../../utils/steps';
+import { MAX_NOTE_LENGTH } from '../../utils/notes';
 import { csvFilename, csvToTasks, downloadCsv, tasksToCsv } from '../../utils/csv';
 import Badge from '../ui/Badge';
-import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download, Copy, CalendarOff, Upload, Repeat, ListChecks, Plus } from 'lucide-react';
+import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download, Copy, CalendarOff, Upload, Repeat, ListChecks, Plus, StickyNote } from 'lucide-react';
 
 const STATUSES = ['Pending', 'In Progress', 'Completed'];
 const PRIORITIES = ['High', 'Medium', 'Low'];
@@ -68,7 +69,7 @@ function searchableText(task) {
   const tags = (task.tags || []).join(' ');
   const steps = (task.steps || []).map((step) => step.text).join(' ');
 
-  return `${task.title} ${tags} ${steps}`.toLowerCase();
+  return `${task.title} ${tags} ${steps} ${task.note || ''}`.toLowerCase();
 }
 
 function shiftDateKey(dateKey, days) {
@@ -136,7 +137,7 @@ const TaskTable = () => {
   const {
     tasks, updateTask, updateTaskStatus, updateTasksStatus, updateTasksPriority,
     updateTasksDeadline, duplicateTask, deleteTask, deleteTasks, importTasks,
-    addStep, toggleStep, removeStep,
+    addStep, toggleStep, removeStep, setTaskNote,
   } = useContext(AppContext);
   // Read once, on the first render, rather than on every one: this is where
   // the table was left, not a value that keeps arriving.
@@ -751,6 +752,7 @@ const TaskTable = () => {
             const steps = normalizeSteps(item.steps);
             const progress = stepProgress(steps);
             const stepsOpen = openSteps.has(item.id);
+            const note = item.note || '';
 
             return (
             <React.Fragment key={item.id}>
@@ -830,6 +832,24 @@ const TaskTable = () => {
                         >
                           <ListChecks className="h-3 w-3" />
                           {progress.done}/{progress.total}
+                        </button>
+                      )}
+                      {/* A note is invisible with the panel shut, and a note
+                          nobody knows is there is a note nobody reads. The
+                          marker opens the panel it refers to, like the step
+                          count beside it; its tooltip carries the opening of
+                          the note so a glance is often enough. */}
+                      {note && !stepsOpen && (
+                        <button
+                          type="button"
+                          onClick={() => toggleSteps(item.id)}
+                          aria-expanded={stepsOpen}
+                          aria-label={`Show the note on "${item.title}"`}
+                          title={note.length > 120 ? `${note.slice(0, 120)}…` : note}
+                          className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 transition-colors hover:bg-slate-200 dark:bg-slate-700/60 dark:text-slate-300 dark:hover:bg-slate-700"
+                        >
+                          <StickyNote className="h-3 w-3" />
+                          Note
                         </button>
                       )}
                       {repeatLabel(item.repeat) && (
@@ -962,16 +982,15 @@ const TaskTable = () => {
                     >
                       <Copy className="h-4 w-4" />
                     </button>
-                    {/* The way in for a task that has no steps yet. The
-                        badge in the title opens the list once there is one
-                        to open, but it cannot be the only door — a task
-                        with nothing broken down would have no handle at
-                        all. */}
+                    {/* The way in for a task with nothing in the panel yet.
+                        The badges in the title open it once there is a note
+                        or a step to open, but they cannot be the only door —
+                        a task with neither would have no handle at all. */}
                     <button
                       onClick={() => toggleSteps(item.id)}
                       aria-expanded={stepsOpen}
-                      aria-label={`${stepsOpen ? 'Hide' : 'Show'} the steps in "${item.title}"`}
-                      title={progress ? 'Steps' : 'Break this into steps'}
+                      aria-label={`${stepsOpen ? 'Hide' : 'Show'} the note and steps for "${item.title}"`}
+                      title={progress || note ? 'Note and steps' : 'Add a note or break this into steps'}
                       className={`transition-colors p-1 rounded ${
                         stepsOpen
                           ? 'text-indigo-500'
@@ -999,6 +1018,28 @@ const TaskTable = () => {
               <tr className="bg-slate-50/60 dark:bg-slate-800/30">
                 <td />
                 <td colSpan={6} className="px-4 pb-4">
+                  {/* Above the steps, because it is the context they are
+                      carried out in — the link to the ticket and the two
+                      sentences saying what the job actually turned out to
+                      be. Written straight into the task as it is typed, so
+                      there is no save button to forget and nothing to lose
+                      by navigating away mid-sentence. */}
+                  <label className="mb-3 block">
+                    <span className="sr-only">{`Note on "${item.title}"`}</span>
+                    <textarea
+                      value={note}
+                      onChange={(e) => setTaskNote(item.id, e.target.value)}
+                      // The tidy-up waits for the box to be left: trimming
+                      // while somebody is typing would eat the space they
+                      // just pressed.
+                      onBlur={(e) => setTaskNote(item.id, e.target.value, true)}
+                      rows={note ? Math.min(6, note.split('\n').length + 1) : 2}
+                      maxLength={MAX_NOTE_LENGTH}
+                      placeholder="Notes — links, who asked, what this actually means"
+                      className="w-full resize-y rounded-lg border border-slate-200 bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-700"
+                    />
+                  </label>
+
                   <ul className="space-y-1.5">
                     {steps.map((step) => (
                       <li key={step.id} className="group/step flex items-center gap-2">

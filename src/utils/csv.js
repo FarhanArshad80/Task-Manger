@@ -1,6 +1,7 @@
 import { normalizeTags, tagsToText } from './tags';
 import { normalizeRepeat, REPEAT_NONE, REPEAT_VALUES } from './recurrence';
 import { stepsToText, textToSteps } from './steps';
+import { normalizeNote } from './notes';
 
 // The columns a spreadsheet actually wants, in the order the table shows
 // them. `read` returns a plain string; the quoting rules below are the only
@@ -19,6 +20,10 @@ const COLUMNS = [
   // reads as a checklist to a person opening the file, and a pipe because a
   // comma would have the writer quoting almost every row.
   { header: 'Steps', read: (task) => stepsToText(task.steps) },
+  // Free text, and the field most likely to hold a comma or a line break —
+  // which is exactly what the quoting rules below are for, so it goes out as
+  // it was written rather than being flattened to fit a cell.
+  { header: 'Note', read: (task) => normalizeNote(task.note) },
   // Written as the schedule's own name rather than a label, so a file can be
   // round-tripped through a spreadsheet and still come back as a schedule.
   // A one-off leaves the cell empty instead of saying "none" in every row.
@@ -234,6 +239,10 @@ export function csvToTasks(text, today = new Date().toLocaleDateString('en-CA'))
       // has started, which is what somebody typing one into a spreadsheet
       // column means by it.
       steps: textToSteps(read(row, 'Steps')),
+      // A spreadsheet that turned the line breaks into spaces on the way
+      // through has still handed back the note; it is prose, and prose
+      // survives being reflowed.
+      note: normalizeNote(read(row, 'Note')),
     });
   }
 
