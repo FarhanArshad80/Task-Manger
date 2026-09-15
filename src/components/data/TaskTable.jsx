@@ -80,6 +80,55 @@ function shiftDateKey(dateKey, days) {
   return date.toLocaleDateString('en-CA');
 }
 
+// The table's own settings, kept between visits.
+//
+// Every control above the rows reset on reload, and the table is rendered on
+// two pages — so narrowing to "Overdue, High priority", opening a task and
+// coming back put the whole board in front of you again. The filters are the
+// question somebody is working through, and it is not a question that stops
+// being theirs when the page remounts.
+//
+// Only what is visible in a control goes in here. A stored filter that had
+// no switch on screen would be a table quietly hiding rows with no way to
+// find out why; because each of these is drawn from the value it restores,
+// the page always explains itself.
+const VIEW_KEY = 'taskengine.table-view';
+
+// Anything off disk is a stranger — an older build, a hand-edited store, a
+// filter whose option has since been removed — so each field is checked
+// against what the table can actually offer rather than trusted.
+//
+// The tag filter is the exception, and deliberately: tags come from the
+// tasks, not from a fixed list, so it is let through as typed and the effect
+// that already drops a filter pinned to a vanished tag handles the rest.
+function loadView() {
+  const blank = {
+    query: '', statusFilter: ALL, priorityFilter: ALL, tagFilter: ALL,
+    dueFilter: ALL, sort: { key: null, direction: 'asc' },
+  };
+
+  try {
+    const saved = JSON.parse(localStorage.getItem(VIEW_KEY));
+
+    if (!saved || typeof saved !== 'object') return blank;
+
+    const sortKey = saved.sort?.key;
+
+    return {
+      query: typeof saved.query === 'string' ? saved.query.slice(0, 100) : '',
+      statusFilter: STATUSES.includes(saved.statusFilter) ? saved.statusFilter : ALL,
+      priorityFilter: PRIORITIES.includes(saved.priorityFilter) ? saved.priorityFilter : ALL,
+      tagFilter: typeof saved.tagFilter === 'string' ? saved.tagFilter : ALL,
+      dueFilter: Object.hasOwn(DUE_FILTERS, saved.dueFilter) ? saved.dueFilter : ALL,
+      sort: Object.hasOwn(SORTABLE, sortKey)
+        ? { key: sortKey, direction: saved.sort.direction === 'desc' ? 'desc' : 'asc' }
+        : blank.sort,
+    };
+  } catch {
+    return blank;
+  }
+}
+
 const controlClass =
   'px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm';
 
@@ -89,12 +138,15 @@ const TaskTable = () => {
     updateTasksDeadline, duplicateTask, deleteTask, deleteTasks, importTasks,
     addStep, toggleStep, removeStep,
   } = useContext(AppContext);
-  const [query, setQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState(ALL);
-  const [priorityFilter, setPriorityFilter] = useState(ALL);
-  const [tagFilter, setTagFilter] = useState(ALL);
-  const [dueFilter, setDueFilter] = useState(ALL);
-  const [sort, setSort] = useState({ key: null, direction: 'asc' });
+  // Read once, on the first render, rather than on every one: this is where
+  // the table was left, not a value that keeps arriving.
+  const [view] = useState(loadView);
+  const [query, setQuery] = useState(view.query);
+  const [statusFilter, setStatusFilter] = useState(view.statusFilter);
+  const [priorityFilter, setPriorityFilter] = useState(view.priorityFilter);
+  const [tagFilter, setTagFilter] = useState(view.tagFilter);
+  const [dueFilter, setDueFilter] = useState(view.dueFilter);
+  const [sort, setSort] = useState(view.sort);
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState({
     title: '', deadline: '', priority: 'Medium', tags: '', repeat: REPEAT_NONE,
@@ -129,6 +181,20 @@ const TaskTable = () => {
     Medium: 'text-amber-500',
     Low: 'text-emerald-500',
   };
+
+  // Written back whenever any of them moves. A failed write is not worth
+  // interrupting anybody over — the table still works, it just opens on
+  // everything next time.
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        VIEW_KEY,
+        JSON.stringify({ query, statusFilter, priorityFilter, tagFilter, dueFilter, sort })
+      );
+    } catch {
+      // Storage unavailable (private window, blocked site data).
+    }
+  }, [query, statusFilter, priorityFilter, tagFilter, dueFilter, sort]);
 
   const availableTags = useMemo(() => collectTags(tasks), [tasks]);
 
@@ -442,6 +508,23 @@ const TaskTable = () => {
             </option>
           ))}
         </select>
+
+        {/* Only while there is something to clear. A permanent "Clear
+            filters" beside a table showing everything is a button that does
+            nothing, and the row is already five controls wide.
+
+            It matters more than it did: the empty-state version below only
+            appears once nothing matches, and a narrowed table that still has
+            rows in it no longer clears itself when somebody walks away. */}
+        {isFiltered && (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-slate-500 hover:border-indigo-400 hover:text-indigo-500 transition-colors"
+          >
+            Clear filters
+          </button>
+        )}
 
         {availableTags.length > 0 && (
           <select
