@@ -51,6 +51,26 @@ const DUE_FILTERS = {
   none: { label: 'No deadline', test: (task) => !task.deadline },
 };
 
+// Everything about a task that a person might go looking for it by.
+//
+// Search read the title and nothing else, which meant the two fields added
+// precisely so a task could be described by more than its title — its tags
+// and the steps it is made of — were invisible to the one control anybody
+// uses to find things. Typing "invoice" found the task called "invoice" and
+// missed the one tagged #invoice with "chase the invoice" third on its
+// checklist.
+//
+// Tags are stored without their hash but shown with one, so a search for
+// "#billing" has to find them too — the filter list beside this box writes
+// them that way, and a search box is not the place to make somebody
+// remember which spelling is the real one.
+function searchableText(task) {
+  const tags = (task.tags || []).join(' ');
+  const steps = (task.steps || []).map((step) => step.text).join(' ');
+
+  return `${task.title} ${tags} ${steps}`.toLowerCase();
+}
+
 function shiftDateKey(dateKey, days) {
   const [y, m, d] = dateKey.split('-').map(Number);
   const date = new Date(y, m - 1, d);
@@ -124,10 +144,13 @@ const TaskTable = () => {
   // A task saved before the priority picker existed has none of its own;
   // the table already reads those as Medium, so the filter must agree.
   const visibleTasks = useMemo(() => {
-    const term = query.trim().toLowerCase();
+    // A leading hash is how tags are written everywhere else on the page, so
+    // it is dropped rather than searched for. Only the first one: "##" is
+    // somebody looking for a literal string, not for a tag.
+    const term = query.trim().toLowerCase().replace(/^#/, '');
 
     return tasks.filter((item) => {
-      if (term && !item.title.toLowerCase().includes(term)) return false;
+      if (term && !searchableText(item).includes(term)) return false;
       if (statusFilter !== ALL && item.status !== statusFilter) return false;
       if (
         priorityFilter !== ALL &&
@@ -375,8 +398,8 @@ const TaskTable = () => {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Filter tasks by description..."
-            aria-label="Filter tasks by description"
+            placeholder="Search titles, tags and steps..."
+            aria-label="Search tasks by title, tag or step"
             className="w-full bg-transparent focus:outline-none text-sm"
           />
         </label>
