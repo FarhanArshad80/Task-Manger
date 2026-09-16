@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppContext } from '../../context/AppContext';
-import { collectTags, hasTag, tagsToText } from '../../utils/tags';
+import { MAX_TAG_LENGTH, collectTags, hasTag, tagsToText } from '../../utils/tags';
 import { REPEAT_OPTIONS, REPEAT_NONE, normalizeRepeat, repeatLabel } from '../../utils/recurrence';
 import { MAX_STEPS, normalizeSteps, stepProgress } from '../../utils/steps';
 import { MAX_NOTE_LENGTH } from '../../utils/notes';
@@ -136,7 +136,7 @@ const controlClass =
 const TaskTable = () => {
   const {
     tasks, updateTask, updateTaskStatus, updateTasksStatus, updateTasksPriority,
-    updateTasksDeadline, duplicateTask, togglePin, deleteTask, deleteTasks, importTasks,
+    updateTasksDeadline, updateTasksTags, duplicateTask, togglePin, deleteTask, deleteTasks, importTasks,
     addStep, toggleStep, removeStep, setTaskNote,
   } = useContext(AppContext);
   // Read once, on the first render, rather than on every one: this is where
@@ -153,6 +153,10 @@ const TaskTable = () => {
     title: '', deadline: '', priority: 'Medium', tags: '', repeat: REPEAT_NONE,
   });
   const [selected, setSelected] = useState(() => new Set());
+  // The tag being applied to the selection. Held here rather than fired on
+  // change like the status and priority pickers, because a half-typed word
+  // is not an instruction.
+  const [bulkTag, setBulkTag] = useState('');
   // Which rows have their checklist open, and what is being typed into it.
   // Open by row rather than one at a time: working through two related jobs
   // usually means having both lists in front of you.
@@ -343,6 +347,22 @@ const TaskTable = () => {
   const applyBulkDeadline = (deadline) => {
     updateTasksDeadline([...selected], deadline);
     setSelected(new Set());
+  };
+
+  // Unlike the pickers beside it, this one holds what was typed until it is
+  // applied — a tag has to be finished being spelled before it means
+  // anything, where picking "High" from a list is the whole instruction.
+  const applyBulkTags = (mode) => {
+    if (!bulkTag.trim()) return;
+
+    updateTasksTags([...selected], bulkTag, mode);
+    setBulkTag('');
+
+    // Deliberately keeping the selection here, where the other bulk actions
+    // drop it. Tagging is the one that comes in runs — the same twenty rows
+    // get a project tag, then a quarter tag — and those rows are no harder
+    // to find after being tagged than before, which is the thing that makes
+    // the others let go.
   };
 
   // Exports what is on screen, in the order it is on screen: the filters and
@@ -625,6 +645,59 @@ const TaskTable = () => {
               className={`${controlClass} py-1 text-xs`}
             />
           </label>
+
+          {/* The tags already on the board are offered as suggestions rather
+              than as the only choices. Picking an existing one is the common
+              case and misspelling it is the common failure — but a tag has
+              to be typeable the first time or no list would ever have it. */}
+          <label className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-300">
+            Tag
+            <input
+              type="text"
+              list="bulk-tag-options"
+              value={bulkTag}
+              onChange={(e) => setBulkTag(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return;
+                // The table sits inside no form, but Enter is what a person
+                // presses after typing a word into a box, and doing nothing
+                // reads as the box being broken.
+                e.preventDefault();
+                applyBulkTags('add');
+              }}
+              maxLength={MAX_TAG_LENGTH}
+              placeholder="name…"
+              aria-label="Tag to add to or remove from the selected tasks"
+              className={`${controlClass} w-24 py-1 text-xs`}
+            />
+          </label>
+          <datalist id="bulk-tag-options">
+            {availableTags.map((tag) => (
+              <option key={tag} value={tag} />
+            ))}
+          </datalist>
+
+          <button
+            type="button"
+            onClick={() => applyBulkTags('add')}
+            disabled={!bulkTag.trim()}
+            title="Add this tag to the selected tasks"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-500/10 disabled:opacity-40 disabled:hover:bg-transparent dark:text-slate-300"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add
+          </button>
+
+          <button
+            type="button"
+            onClick={() => applyBulkTags('remove')}
+            disabled={!bulkTag.trim()}
+            title="Remove this tag from the selected tasks"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-500/10 disabled:opacity-40 disabled:hover:bg-transparent dark:text-slate-300"
+          >
+            <X className="h-3.5 w-3.5" />
+            Untag
+          </button>
 
           {/* A date box can be typed into but never emptied on command, and
               "no deadline" is a real state the table already filters for. */}

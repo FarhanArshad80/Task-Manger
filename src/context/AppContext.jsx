@@ -395,6 +395,45 @@ export const AppProvider = ({ children }) => {
     );
   };
 
+  // Tags are the one field the bulk bar could not touch, and the one that
+  // most often needs it. Tags get introduced late — a project acquires a name
+  // in week three, and the twenty tasks that belong to it were all written in
+  // week one. Applying it a row at a time meant opening twenty editors and
+  // typing the same word into each.
+  //
+  // Adding and removing rather than replacing, because a selection is rarely
+  // uniform: the rows share the tag being put on them, not the tags they
+  // already carry, and a bulk "set tags" would quietly strip everything else
+  // off every row it touched.
+  const updateTasksTags = (ids, tags, mode = 'add') => {
+    const target = new Set(ids);
+    const incoming = normalizeTags(tags);
+
+    if (incoming.length === 0) return;
+
+    const dropping = new Set(incoming.map((tag) => tag.toLowerCase()));
+
+    setTasks((prev) =>
+      prev.map((task) => {
+        if (!target.has(task.id)) return task;
+
+        const current = task.tags || [];
+
+        return {
+          ...task,
+          tags:
+            mode === 'remove'
+              ? current.filter((tag) => !dropping.has(tag.toLowerCase()))
+              // Existing tags lead, so the cap falls on the word arriving
+              // rather than silently pushing off one already there. A task
+              // that is already full keeps what it has — the alternative is
+              // a bulk action that trades tags it was never asked about.
+              : normalizeTags([...current, ...incoming]),
+        };
+      })
+    );
+  };
+
   const deleteTasks = (ids) => {
     const target = new Set(ids);
     const entries = [];
@@ -455,6 +494,7 @@ export const AppProvider = ({ children }) => {
         updateTasksStatus,
         updateTasksPriority,
         updateTasksDeadline,
+        updateTasksTags,
         deleteTask,
         deleteTasks,
         recentlyDeleted,
