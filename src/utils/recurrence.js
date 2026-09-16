@@ -109,6 +109,11 @@ export function nextOccurrence(task, today, createId) {
     // into being the moment its predecessor was ticked off.
     date: today,
     deadline: nextDeadline(task, today),
+    // A pin is about today, and this occurrence is about a week from now.
+    // Inheriting it would mean a standing job pinned once stayed pinned for
+    // as long as it kept recurring, which is the one way a pin stops meaning
+    // anything.
+    pinned: false,
     tags: [...(task.tags || [])],
   };
 }

@@ -96,6 +96,10 @@ export const AppProvider = ({ children }) => {
         repeat: normalizeRepeat(task.repeat),
         steps: normalizeSteps(task.steps),
         note: normalizeNote(task.note),
+        // Nothing arrives pinned. A pin says "this one, before the others",
+        // which is a judgement about a board — it cannot be true of a task
+        // that has not met the board yet.
+        pinned: task.pinned === true,
         id: createId(),
       },
     ]);
@@ -134,6 +138,11 @@ export const AppProvider = ({ children }) => {
           newStatus === 'Completed'
             ? task.completedAt || today
             : null,
+        // Finishing something releases its pin. A pin says "this is what I
+        // am on", and the one thing that is certainly no longer true of a
+        // task is that — so a finished row that held its place at the top of
+        // the board would push the work that is still to do underneath it.
+        pinned: newStatus === 'Completed' ? false : task.pinned,
       };
       next.push(updated);
 
@@ -150,6 +159,23 @@ export const AppProvider = ({ children }) => {
 
   const updateTaskStatus = (id, newStatus) => {
     setTasks((prev) => applyStatus(prev, new Set([id]), newStatus));
+  };
+
+  // Priority says how much a task matters. It does not say which one to do
+  // next, and on a board where a dozen things are honestly High it cannot —
+  // that is what gets rewritten every morning and then ignored, because
+  // everything urgent means nothing is.
+  //
+  // A pin is the other question: of all this, which am I on today. It is
+  // deliberately not a fourth priority level. It belongs to the person
+  // rather than to the work, it is expected to move every day, and a handful
+  // of pins is a plan where a column of High is a wish.
+  const togglePin = (id) => {
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === id ? { ...task, pinned: !task.pinned } : task
+      )
+    );
   };
 
   // Status was the only thing a task could change its mind about. A typo in
@@ -224,6 +250,11 @@ export const AppProvider = ({ children }) => {
         // exactly what is being copied — unlike the deadline and the
         // completion date, which belonged to that one occurrence.
         note: normalizeNote(source.note),
+        // A pin marks the one row being worked on now. Two rows cannot both
+        // be that, so the copy starts clean — and a duplicate that arrived
+        // already pinned would quietly push the original down the board it
+        // was copied from.
+        pinned: false,
         tags: [...(source.tags || [])],
       };
 
@@ -414,6 +445,7 @@ export const AppProvider = ({ children }) => {
         addTask,
         importTasks,
         duplicateTask,
+        togglePin,
         updateTask,
         addStep,
         toggleStep,

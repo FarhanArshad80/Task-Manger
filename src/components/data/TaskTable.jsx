@@ -6,7 +6,7 @@ import { MAX_STEPS, normalizeSteps, stepProgress } from '../../utils/steps';
 import { MAX_NOTE_LENGTH } from '../../utils/notes';
 import { csvFilename, csvToTasks, downloadCsv, tasksToCsv } from '../../utils/csv';
 import Badge from '../ui/Badge';
-import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download, Copy, CalendarOff, Upload, Repeat, ListChecks, Plus, StickyNote } from 'lucide-react';
+import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download, Copy, CalendarOff, Upload, Repeat, ListChecks, Plus, StickyNote, Pin, PinOff } from 'lucide-react';
 
 const STATUSES = ['Pending', 'In Progress', 'Completed'];
 const PRIORITIES = ['High', 'Medium', 'Low'];
@@ -136,7 +136,7 @@ const controlClass =
 const TaskTable = () => {
   const {
     tasks, updateTask, updateTaskStatus, updateTasksStatus, updateTasksPriority,
-    updateTasksDeadline, duplicateTask, deleteTask, deleteTasks, importTasks,
+    updateTasksDeadline, duplicateTask, togglePin, deleteTask, deleteTasks, importTasks,
     addStep, toggleStep, removeStep, setTaskNote,
   } = useContext(AppContext);
   // Read once, on the first render, rather than on every one: this is where
@@ -236,14 +236,28 @@ const TaskTable = () => {
   // "no deadline" is not earlier or later than a real one, and letting an
   // empty string sort as the smallest value would file them all as the most
   // urgent work in the table.
+  // Pinned rows come first, whatever else is asked for. That is the whole
+  // point of pinning one: a marker that survived being sorted to the bottom
+  // of the table would be a marker that only works while the table is left
+  // alone, which is not how this table is used.
+  //
+  // It runs ahead of the sort rather than instead of it, so within the pins
+  // and within the rest the chosen column still decides the order — and it
+  // applies with no sort at all, where the pins would otherwise sit wherever
+  // the tasks happened to be added.
   const sortedTasks = useMemo(() => {
-    if (!sort.key) return visibleTasks;
+    const byPin = (a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
+
+    if (!sort.key) return [...visibleTasks].sort(byPin);
 
     const { read } = SORTABLE[sort.key];
     const factor = sort.direction === 'asc' ? 1 : -1;
     const isBlank = (task) => sort.key === 'deadline' && !task.deadline;
 
     return [...visibleTasks].sort((a, b) => {
+      const pinned = byPin(a, b);
+      if (pinned !== 0) return pinned;
+
       if (isBlank(a) !== isBlank(b)) return isBlank(a) ? 1 : -1;
 
       const left = read(a);
@@ -756,8 +770,15 @@ const TaskTable = () => {
 
             return (
             <React.Fragment key={item.id}>
+            {/* The pinned rows sit at the top of the table, which on its own
+                looks like nothing more than the order they happen to be in.
+                An edge down the left says the position was asked for — and
+                says it on the row itself, so it survives the table being
+                scrolled past the button that set it. */}
             <tr
               className={`transition-colors ${
+                item.pinned ? 'border-l-2 border-l-amber-500' : ''
+              } ${
                 selected.has(item.id)
                   ? 'bg-indigo-50/70 dark:bg-indigo-500/10'
                   : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/30'
@@ -981,6 +1002,22 @@ const TaskTable = () => {
                       className="text-slate-400 hover:text-indigo-500 transition-colors p-1 rounded"
                     >
                       <Copy className="h-4 w-4" />
+                    </button>
+                    {/* Amber when set, because a pinned row is meant to be
+                        findable from across the table rather than only once
+                        the eye is already on it. */}
+                    <button
+                      onClick={() => togglePin(item.id)}
+                      aria-pressed={Boolean(item.pinned)}
+                      aria-label={`${item.pinned ? 'Unpin' : 'Pin'} "${item.title}"`}
+                      title={item.pinned ? 'Unpin — let it sort with the rest' : 'Pin to the top'}
+                      className={`transition-colors p-1 rounded ${
+                        item.pinned
+                          ? 'text-amber-500 hover:text-amber-600'
+                          : 'text-slate-400 hover:text-amber-500'
+                      }`}
+                    >
+                      {item.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
                     </button>
                     {/* The way in for a task with nothing in the panel yet.
                         The badges in the title open it once there is a note

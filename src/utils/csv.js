@@ -35,6 +35,10 @@ const COLUMNS = [
       return repeat === REPEAT_NONE ? '' : repeat;
     },
   },
+  // Only the pinned rows say anything, for the same reason a one-off leaves
+  // the Repeat cell empty — "no" in nine rows out of ten is a column nobody
+  // reads.
+  { header: 'Pinned', read: (task) => (task.pinned ? 'yes' : '') },
 ];
 
 // A field needs quoting if it contains a comma, a quote or a line break, and
@@ -235,6 +239,11 @@ export function csvToTasks(text, today = new Date().toLocaleDateString('en-CA'))
       // repeats on terms this app cannot honour would leave it silently
       // never coming back.
       repeat: matchOption(read(row, 'Repeat'), REPEAT_VALUES, REPEAT_NONE),
+      // Generous about what counts as yes, because this column is as likely
+      // to have been typed into a spreadsheet by hand as written by the
+      // export. Anything else — including the empty cell nine rows in ten
+      // carry — is not pinned.
+      pinned: ['yes', 'y', 'true', '1', 'x'].includes(read(row, 'Pinned').toLowerCase()),
       // A hand-written list with no checkboxes at all reads as steps nobody
       // has started, which is what somebody typing one into a spreadsheet
       // column means by it.
