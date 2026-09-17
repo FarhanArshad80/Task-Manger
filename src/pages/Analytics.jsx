@@ -1,7 +1,9 @@
 import React, { useContext, useMemo } from 'react';
 import Card from '../components/ui/Card';
-import { Activity, PieChart, ShieldCheck, ListChecks } from 'lucide-react';
+import { Activity, PieChart, ShieldCheck, ListChecks, Tags } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
+import { tagStats } from '../utils/tags';
+import { todayKey } from '../utils/streak';
 
 const STATUS_COLORS = {
   done: { bar: 'bg-emerald-500', text: 'text-emerald-500', dot: 'bg-emerald-500', hex: '#10b981' },
@@ -110,6 +112,7 @@ const DonutChart = ({ segments, centerLabel, centerSubLabel, size = 200, strokeW
 const Analytics = () => {
   const { tasks = [] } = useContext(AppContext);
   const { total, statusBreakdown, successRate, doneCount, accuracyPct } = useAnalytics(tasks);
+  const byTag = useMemo(() => tagStats(tasks, todayKey()), [tasks]);
 
   return (
     <div className="space-y-6">
@@ -258,6 +261,79 @@ const Analytics = () => {
               </table>
             </div>
           </>
+        )}
+      </Card>
+
+      {/* The status table answers "how much is done". This answers "done of
+          what" — which is the question anyone with more than one project on
+          the board is actually asking. */}
+      <Card className="space-y-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold">Progress by Tag</h3>
+            <p className="text-xs text-slate-400">
+              {/* Said out loud, because otherwise the column below looks like
+                  it should add up to the total above and does not. */}
+              A task with two tags counts toward both.
+            </p>
+          </div>
+          <Tags className="h-5 w-5 text-indigo-500" />
+        </div>
+
+        {byTag.rows.length === 0 ? (
+          <div className="py-8 text-center text-sm text-slate-400">
+            {total === 0
+              ? 'No tasks yet — add one from the Tasks page to see progress here.'
+              : 'No tags yet. Tag tasks by project or area to see how each one is going.'}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-slate-400 uppercase tracking-wide border-b border-slate-200 dark:border-slate-700">
+                  <th className="py-2 pr-4 font-semibold">Tag</th>
+                  <th className="py-2 pr-4 font-semibold w-1/3">Done</th>
+                  <th className="py-2 pr-4 font-semibold">Open</th>
+                  <th className="py-2 pr-4 font-semibold">Overdue</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...byTag.rows, ...(byTag.untagged.total > 0 ? [byTag.untagged] : [])].map((row) => (
+                  <tr
+                    key={row.tag ?? '__untagged'}
+                    className="border-b border-slate-100 dark:border-slate-800 last:border-0"
+                  >
+                    <td className="py-2 pr-4 font-medium">
+                      {row.tag === null ? (
+                        <span className="italic text-slate-400">Untagged</span>
+                      ) : (
+                        `#${row.tag}`
+                      )}
+                    </td>
+                    <td className="py-2 pr-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-2 flex-1 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                          <div
+                            className="h-full bg-emerald-500"
+                            style={{ width: `${row.pct}%` }}
+                          />
+                        </div>
+                        <span className="font-mono text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                          {row.done}/{row.total}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-2 pr-4 font-mono text-slate-500 dark:text-slate-400">{row.open}</td>
+                    {/* Blank rather than a zero on every healthy row, so the
+                        late ones are what the eye finds in this column. */}
+                    <td className="py-2 pr-4 font-mono font-semibold text-rose-500">
+                      {row.overdue > 0 ? row.overdue : ''}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Card>
     </div>
