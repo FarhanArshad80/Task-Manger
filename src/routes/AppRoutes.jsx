@@ -6,6 +6,7 @@ import Calendar from '../pages/Calendar';
 import Progress from '../pages/Progress';
 import Analytics from '../pages/Analytics';
 import About from '../pages/About';
+import NotFound from '../pages/NotFound';
 import ProtectedRoute from './ProtectedRoute';
 
 const AppRoutes = () => {
@@ -17,6 +18,10 @@ const AppRoutes = () => {
       <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
       <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
       <Route path="/about" element={<ProtectedRoute><About /></ProtectedRoute>} />
+      {/* Last, and deliberately outside ProtectedRoute: a wrong address is
+          not a page to be kept behind a sign-in, and sending it through the
+          guard would answer "this does not exist" with "please log in". */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
