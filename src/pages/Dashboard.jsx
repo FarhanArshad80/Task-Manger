@@ -4,7 +4,8 @@ import ProgressChart from '../components/data/ProgressChart';
 import TaskTable from '../components/data/TaskTable';
 import { AppContext } from '../context/AppContext';
 import { buildBriefing } from '../utils/briefing';
-import { CheckCircle2, Clock, AlertCircle, Zap } from 'lucide-react';
+import { todayKey } from '../utils/streak';
+import { CheckCircle2, Clock, AlertCircle, Zap, Pin } from 'lucide-react';
 
 // Each note is coloured by what it is asking for rather than by where it
 // happens to sit in the list, so a board with nothing late never shows a red
@@ -17,13 +18,22 @@ const NOTE_TONES = {
 };
 
 const Dashboard = () => {
-  const { tasks } = useContext(AppContext);
+  const { tasks, updateTaskStatus } = useContext(AppContext);
+  const today = todayKey();
 
   const total = tasks.length;
   const completed = tasks.filter(t => t.status === 'Completed').length;
   const active = tasks.filter(t => t.status === 'In Progress').length;
   const urgent = tasks.filter(t => t.priority === 'High' && t.status !== 'Completed').length;
   const notes = useMemo(() => buildBriefing(tasks), [tasks]);
+  // Pinning says "this one, today". The table honours that by floating
+  // pinned rows to the top — but the dashboard is the page people actually
+  // open, and it had no idea any of it had been decided. Finding today's two
+  // or three jobs meant going to the table and scrolling to it.
+  const pinned = useMemo(
+    () => tasks.filter((task) => task.pinned && task.status !== 'Completed'),
+    [tasks]
+  );
 
   return (
     <div className="space-y-6">
@@ -31,6 +41,58 @@ const Dashboard = () => {
         <h1 className="text-3xl font-extrabold tracking-tight">Workspace Hub</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Real-time operation metrics and core queue deployment status.</p>
       </div>
+
+      {/* Above the metrics, because it is the answer and they are the
+          context. A board that has been given a focus should lead with it. */}
+      {pinned.length > 0 && (
+        <Card className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-bold">Today's focus</h3>
+              <p className="text-xs text-slate-400">
+                The {pinned.length === 1 ? 'task' : `${pinned.length} tasks`} you pinned.
+              </p>
+            </div>
+            <Pin className="h-5 w-5 text-amber-500" />
+          </div>
+
+          <ul className="space-y-2">
+            {pinned.map((task) => {
+              const late = task.deadline && task.deadline < today && task.status !== 'Completed';
+
+              return (
+                <li
+                  key={task.id}
+                  className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 border-l-2 border-l-amber-500 px-3 py-2"
+                >
+                  {/* One press to close it out. The whole point of a pin is
+                      that this is the work in hand, so the action it most
+                      needs is the one that finishes it. */}
+                  <button
+                    type="button"
+                    onClick={() => updateTaskStatus(task.id, 'Completed')}
+                    aria-label={`Mark "${task.title}" completed`}
+                    title="Mark completed"
+                    className="shrink-0 text-slate-300 dark:text-slate-600 transition-colors hover:text-emerald-500"
+                  >
+                    <CheckCircle2 className="h-5 w-5" />
+                  </button>
+
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{task.title}</span>
+
+                  {/* Only when it is late. A due date on every row would be a
+                      column; a date on the one that has slipped is a warning. */}
+                  {late && (
+                    <span className="shrink-0 font-mono text-xs font-semibold text-rose-500">
+                      overdue
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      )}
 
       {/* KPI Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
