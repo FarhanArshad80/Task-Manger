@@ -4,6 +4,7 @@ import { MAX_TAG_LENGTH, collectTags, hasTag, tagsToText } from '../../utils/tag
 import { REPEAT_OPTIONS, REPEAT_NONE, normalizeRepeat, repeatLabel } from '../../utils/recurrence';
 import { MAX_STEPS, normalizeSteps, stepProgress } from '../../utils/steps';
 import { MAX_NOTE_LENGTH } from '../../utils/notes';
+import { dueText } from '../../utils/dueText';
 import { csvFilename, csvToTasks, downloadCsv, tasksToCsv } from '../../utils/csv';
 import Badge from '../ui/Badge';
 import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download, Copy, CalendarOff, Upload, Repeat, ListChecks, Plus, StickyNote, Pin, PinOff } from 'lucide-react';
@@ -995,7 +996,16 @@ const TaskTable = () => {
                     title={isOverdue(item) ? 'Past its due date' : undefined}
                   >
                     {item.deadline}
-                    {isOverdue(item) && ' · overdue'}
+                    {/* The date says which day; this says how far off it is.
+                        It replaces the old '· overdue' flag, which said less
+                        in the same space — "3 days late" is already the red
+                        row explaining itself, and it goes on being useful
+                        after the deadline has passed. */}
+                    {dueText(item, today) && (
+                      <span className="block text-xs font-normal opacity-80">
+                        {dueText(item, today)}
+                      </span>
+                    )}
                   </span>
                 ) : (
                   <span className="text-slate-400">—</span>
