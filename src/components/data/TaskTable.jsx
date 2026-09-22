@@ -7,7 +7,7 @@ import { MAX_NOTE_LENGTH } from '../../utils/notes';
 import { dueText } from '../../utils/dueText';
 import { csvFilename, csvToTasks, downloadCsv, tasksToCsv } from '../../utils/csv';
 import Badge from '../ui/Badge';
-import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download, Copy, CalendarOff, Upload, Repeat, ListChecks, Plus, StickyNote, Pin, PinOff } from 'lucide-react';
+import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download, Copy, CalendarOff, CalendarClock, Upload, Repeat, ListChecks, Plus, StickyNote, Pin, PinOff } from 'lucide-react';
 
 const STATUSES = ['Pending', 'In Progress', 'Completed'];
 const PRIORITIES = ['High', 'Medium', 'Low'];
@@ -174,6 +174,16 @@ const TaskTable = () => {
   const today = new Date().toLocaleDateString('en-CA');
   const dueHorizon = useMemo(() => shiftDateKey(today, 7), [today]);
   const isOverdue = (item) => DUE_FILTERS.overdue.test(item, today);
+  // The day after today, not the day after the deadline. A task three days
+  // late pushed to deadline+1 is still two days late, which is not what
+  // anybody pressing "tomorrow" is asking for.
+  const tomorrow = useMemo(() => shiftDateKey(today, 1), [today]);
+
+  // Whether a row is worth offering the push on: a deadline that has arrived
+  // or gone, on work that is still open. A task due next week is not being
+  // rescheduled in passing, and a finished one has no deadline left to move.
+  const canPush = (item) =>
+    Boolean(item.deadline) && item.deadline <= today && item.status !== 'Completed';
 
   // Safely moved inside the component block
   const getBadgeVariant = (statusFlag) => {
@@ -1005,6 +1015,29 @@ const TaskTable = () => {
                       <span className="block text-xs font-normal opacity-80">
                         {dueText(item, today)}
                       </span>
+                    )}
+                    {/* The one edit a late row almost always wants, without
+                        the trip through the editor and the calendar popup
+                        that moving a date otherwise costs. The new-task form
+                        already reasons this way about its Today/Tomorrow
+                        shortcuts; a deadline that has run out is where the
+                        argument is strongest.
+
+                        Only on a row where it means something, and never on
+                        one being edited — the date field is right there, and
+                        a button that wrote straight past the draft would
+                        quietly discard whatever was typed into it. */}
+                    {canPush(item) && editingId !== item.id && (
+                      <button
+                        type="button"
+                        onClick={() => updateTask(item.id, { deadline: tomorrow })}
+                        aria-label={`Move "${item.title}" to tomorrow`}
+                        title={`Move to tomorrow — ${tomorrow}`}
+                        className="mt-1 flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-medium text-slate-400 transition-colors hover:bg-slate-100 hover:text-indigo-500 dark:hover:bg-slate-700/60 dark:hover:text-indigo-300"
+                      >
+                        <CalendarClock className="h-3 w-3" />
+                        Tomorrow
+                      </button>
                     )}
                   </span>
                 ) : (
