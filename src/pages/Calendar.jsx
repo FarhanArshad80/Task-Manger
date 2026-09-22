@@ -1,5 +1,6 @@
 import React, { useContext, useMemo, useState } from 'react';
 import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 
@@ -71,7 +72,7 @@ function dayLabel(dateKey) {
 }
 
 const Calendar = () => {
-  const { tasks = [] } = useContext(AppContext);
+  const { tasks = [], addTask } = useContext(AppContext);
   const [cursor, setCursor] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -103,6 +104,46 @@ const Calendar = () => {
   // today, which is the day most people came to check.
   const [selectedKey, setSelectedKey] = useState(() => toDateKey(new Date()));
   const selectedTasks = tasksByDate[selectedKey] || [];
+
+  // What is being added to the day on screen. Cleared whenever the day
+  // changes, because a title typed against Thursday is about Thursday — and
+  // carrying it over to Friday would file it against a day nobody chose for
+  // it.
+  const [newTitle, setNewTitle] = useState('');
+  const [newPriority, setNewPriority] = useState('Medium');
+
+  const selectDay = (dateKey) => {
+    setSelectedKey(dateKey);
+    setNewTitle('');
+  };
+
+  // Reading a calendar and planning against one are the same act: the moment
+  // anybody notices Thursday is empty is the moment they want to put
+  // something in it. Until now that meant leaving the page for the task
+  // list, typing the title, then walking a date picker back to the day that
+  // was already on screen.
+  const addForSelectedDay = (event) => {
+    event.preventDefault();
+
+    const title = newTitle.trim();
+
+    if (!title || !selectedKey) return;
+
+    addTask({
+      title,
+      status: 'Pending',
+      priority: newPriority,
+      // Created today; due on the day being looked at. These are different
+      // dates and the calendar of the two that matters here is the deadline
+      // — see getTaskDate above, where confusing them put every task on the
+      // day it was typed in.
+      date: toDateKey(new Date()),
+      deadline: selectedKey,
+      tags: '',
+    });
+
+    setNewTitle('');
+  };
 
   const goToPrevMonth = () => setCursor(new Date(year, month - 1, 1));
   const goToNextMonth = () => setCursor(new Date(year, month + 1, 1));
@@ -152,7 +193,7 @@ const Calendar = () => {
                 <button
                   type="button"
                   key={day}
-                  onClick={() => setSelectedKey(dateKey)}
+                  onClick={() => selectDay(dateKey)}
                   aria-pressed={selectedKey === dateKey}
                   aria-label={`${dayLabel(dateKey)}: ${dayTasks.length} task${dayTasks.length === 1 ? '' : 's'}`}
                   className={`aspect-square text-left bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg p-2 transition-all flex flex-col justify-start gap-1 border overflow-hidden group ${
@@ -227,6 +268,39 @@ const Calendar = () => {
               })}
             </ul>
           )}
+
+          {/* Under the day it files against, so the day is the label: there
+              is no date field here because the date is the panel heading,
+              and a second one could only ever disagree with it. */}
+          <form onSubmit={addForSelectedDay} className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <input
+              type="text"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              // The whole label rather than a slice of it: where the
+              // weekday falls in a date differs by locale, and trimming it
+              // off by position reads as nonsense in the ones it does not
+              // come first in.
+              placeholder={`Add something due ${dayLabel(selectedKey)}...`}
+              aria-label={`Title of a task due on ${dayLabel(selectedKey)}`}
+              className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+            />
+            <select
+              value={newPriority}
+              onChange={(e) => setNewPriority(e.target.value)}
+              aria-label="Priority"
+              className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+            >
+              {['Low', 'Medium', 'High'].map((level) => (
+                <option key={level} value={level} className="bg-white dark:bg-slate-800">
+                  {level} priority
+                </option>
+              ))}
+            </select>
+            <Button type="submit" disabled={!newTitle.trim()}>
+              Add
+            </Button>
+          </form>
         </Card>
       )}
     </div>
