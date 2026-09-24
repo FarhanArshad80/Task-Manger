@@ -7,7 +7,7 @@ import { MAX_NOTE_LENGTH } from '../../utils/notes';
 import { dueText } from '../../utils/dueText';
 import { csvFilename, csvToTasks, downloadCsv, tasksToCsv } from '../../utils/csv';
 import Badge from '../ui/Badge';
-import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download, Copy, CalendarOff, CalendarClock, Upload, Repeat, ListChecks, Plus, StickyNote, Pin, PinOff } from 'lucide-react';
+import { Trash2, Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Download, Copy, CalendarOff, CalendarClock, Upload, Repeat, ListChecks, Plus, StickyNote, Pin, PinOff, CircleCheck } from 'lucide-react';
 
 const STATUSES = ['Pending', 'In Progress', 'Completed'];
 const PRIORITIES = ['High', 'Medium', 'Low'];
@@ -1289,6 +1289,26 @@ const TaskTable = () => {
                     <p className="mt-2 text-xs text-slate-400">
                       That is {MAX_STEPS} steps — past this it is two tasks.
                     </p>
+                  )}
+
+                  {/* Ticking the last step is the moment the job is done, and
+                      the status flag is two columns away in a dropdown. The
+                      offer turns up here, under the tick that earned it,
+                      rather than the task finishing itself: a list can be
+                      complete while the work is not — a step nobody wrote
+                      down, a result still to be checked — and completing a
+                      repeating task creates its next occurrence, which is
+                      not something a checkbox should do behind anyone's
+                      back. */}
+                  {progress?.complete && item.status !== 'Completed' && (
+                    <button
+                      type="button"
+                      onClick={() => updateTaskStatus(item.id, 'Completed')}
+                      className="mt-3 flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-emerald-600 transition-colors hover:bg-emerald-500/10 dark:text-emerald-400"
+                    >
+                      <CircleCheck className="h-3.5 w-3.5" />
+                      Every step is done — mark the task complete
+                    </button>
                   )}
                 </td>
               </tr>
