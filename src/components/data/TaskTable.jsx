@@ -168,6 +168,7 @@ const TaskTable = () => {
   // table can look exactly like nothing happening.
   const [importNote, setImportNote] = useState('');
   const selectAllRef = useRef(null);
+  const searchRef = useRef(null);
 
   // 'YYYY-MM-DD' strings compare correctly as plain text, and building the
   // key from local parts keeps "today" honest in every timezone.
@@ -211,6 +212,35 @@ const TaskTable = () => {
       // Storage unavailable (private window, blocked site data).
     }
   }, [query, statusFilter, priorityFilter, tagFilter, dueFilter, sort]);
+
+  // "/" jumps to the search box, the way it does on most sites with one.
+  // Finding a task is the most common reason to be on this page, and reaching
+  // for the mouse to click a box at the top of a long table is the slow part
+  // of it.
+  //
+  // Only when nothing else is taking the keystroke: a slash typed into a
+  // title, a note or a step is a slash, and a date or a URL in a note is
+  // exactly where one turns up. Modified presses are left to the browser.
+  useEffect(() => {
+    const focusSearch = (event) => {
+      if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return;
+
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      searchRef.current?.focus();
+      searchRef.current?.select();
+    };
+
+    window.addEventListener('keydown', focusSearch);
+    return () => window.removeEventListener('keydown', focusSearch);
+  }, []);
 
   const availableTags = useMemo(() => collectTags(tasks), [tasks]);
 
@@ -507,13 +537,25 @@ const TaskTable = () => {
         <label className="flex items-center gap-2 flex-1 min-w-0 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 focus-within:ring-2 focus-within:ring-indigo-500">
           <Search className="h-4 w-4 shrink-0 text-slate-400" />
           <input
+            ref={searchRef}
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search titles, tags and steps..."
             aria-label="Search tasks by title, tag or step"
+            aria-keyshortcuts="/"
             className="w-full bg-transparent focus:outline-none text-sm"
           />
+          {/* A shortcut nobody is told about is one nobody uses. Shown only
+              while the box is empty, so it never sits on top of a search. */}
+          {!query && (
+            <kbd
+              title="Press / to search"
+              className="hidden sm:inline-block shrink-0 rounded border border-slate-200 px-1.5 text-[11px] font-mono text-slate-400 dark:border-slate-700"
+            >
+              /
+            </kbd>
+          )}
         </label>
 
         <select
