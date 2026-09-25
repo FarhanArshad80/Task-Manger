@@ -41,9 +41,24 @@ function loadTasks() {
   }
 }
 
-function loadTheme() {
+// The theme somebody picked with the toggle, or null if they never have.
+function loadSavedTheme() {
   try {
-    return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light';
+    const saved = localStorage.getItem(THEME_KEY);
+    return saved === 'dark' || saved === 'light' ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+const DARK_QUERY = '(prefers-color-scheme: dark)';
+
+// Someone who has set their whole machine to dark has already answered the
+// question the toggle asks. Opening the app on a white page anyway, and
+// making them find the moon icon on every new browser, is asking it twice.
+function systemTheme() {
+  try {
+    return window.matchMedia(DARK_QUERY).matches ? 'dark' : 'light';
   } catch {
     return 'light';
   }
@@ -53,7 +68,12 @@ export const AppProvider = ({ children }) => {
   // Core tasks state initialization
   const [tasks, setTasks] = useState(loadTasks);
 
-  const [theme, setTheme] = useState(loadTheme);
+  // A choice made with the toggle always wins. Until one is made the app
+  // follows the system, and nothing is written - storing the system's answer
+  // on the first visit would freeze it there, and the app would stay light
+  // after the machine had long since gone dark.
+  const [themeChosen, setThemeChosen] = useState(() => loadSavedTheme() !== null);
+  const [theme, setTheme] = useState(() => loadSavedTheme() || systemTheme());
 
   // A delete is the one action here that cannot be talked out of afterwards,
   // and a bulk delete takes a screenful at once. What was removed is held —
@@ -74,15 +94,39 @@ export const AppProvider = ({ children }) => {
   }, [tasks]);
 
   useEffect(() => {
+    if (!themeChosen) return;
+
     try {
       localStorage.setItem(THEME_KEY, theme);
     } catch {
       // Same here: a failed preference write should not break rendering.
     }
-  }, [theme]);
+  }, [theme, themeChosen]);
 
-  // Toggle app theme
+  // Following the system means following it when it changes, too - a
+  // machine that turns dark at sunset should take an open tab with it.
+  useEffect(() => {
+    if (themeChosen) return undefined;
+
+    let query;
+
+    try {
+      query = window.matchMedia(DARK_QUERY);
+    } catch {
+      return undefined;
+    }
+
+    const follow = (event) => setTheme(event.matches ? 'dark' : 'light');
+
+    query.addEventListener('change', follow);
+
+    return () => query.removeEventListener('change', follow);
+  }, [themeChosen]);
+
+  // Toggle app theme. Pressing it is the choice that stops the app
+  // following the system.
   const toggleTheme = () => {
+    setThemeChosen(true);
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
