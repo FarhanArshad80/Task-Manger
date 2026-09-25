@@ -1,8 +1,27 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { NavLink } from 'react-router-dom';
 import { sidebarLinks } from '../../config/sidebarNav';
+import { AppContext } from '../../context/AppContext';
+import { todayKey } from '../../utils/streak';
+
+// Late work was only ever visible from inside the task table, as red rows
+// among everything else - and only once somebody had gone there to look.
+// The sidebar is on every page, so it is where a count of what has slipped
+// can be seen without asking for it.
+//
+// Same rule as the table's Overdue filter: a deadline before today on work
+// that is not finished. Completed work is not late however late it was
+// finished.
+function countOverdue(tasks, today) {
+  return (tasks || []).filter(
+    (task) => Boolean(task.deadline) && task.deadline < today && task.status !== 'Completed'
+  ).length;
+}
 
 const Sidebar = () => {
+  const { tasks } = useContext(AppContext);
+  const overdue = countOverdue(tasks, todayKey());
+
   return (
     <aside className="w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 min-h-screen p-4 flex flex-col justify-between md:flex">
       <div>
@@ -27,6 +46,18 @@ const Sidebar = () => {
               >
                 <Icon className="h-5 w-5" />
                 <span>{link.label}</span>
+                {/* Only on the link that leads to the work, and only when
+                    there is some. A zero badge would be a number to read on
+                    every page for the days when nothing is wrong. */}
+                {link.path === '/tasks' && overdue > 0 && (
+                  <span
+                    className="ml-auto rounded-full bg-rose-500/15 px-2 py-0.5 font-mono text-[11px] font-semibold text-rose-500"
+                    title={`${overdue} overdue`}
+                    aria-label={`${overdue} overdue`}
+                  >
+                    {overdue}
+                  </span>
+                )}
               </NavLink>
             );
           })}
