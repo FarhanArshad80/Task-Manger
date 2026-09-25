@@ -148,6 +148,21 @@ const Calendar = () => {
   const goToPrevMonth = () => setCursor(new Date(year, month - 1, 1));
   const goToNextMonth = () => setCursor(new Date(year, month + 1, 1));
 
+  // Paging through the months is one press each way, which makes getting
+  // back from a deadline in March a dozen presses on the same arrow. Today
+  // is the day most people came to the calendar to check, so returning to it
+  // takes the month and the day panel back together - a grid showing this
+  // month under a panel still describing March would be two answers at once.
+  const now = new Date();
+  const todayDateKey = toDateKey(now);
+  const onToday =
+    year === now.getFullYear() && month === now.getMonth() && selectedKey === todayDateKey;
+
+  const goToToday = () => {
+    setCursor(new Date(now.getFullYear(), now.getMonth(), 1));
+    selectDay(todayDateKey);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -164,6 +179,17 @@ const Calendar = () => {
           <span className="text-xs font-bold px-3 font-mono">{monthLabel}</span>
           <button onClick={goToNextMonth} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded">
             <ChevronRight className="h-4 w-4" />
+          </button>
+          {/* Disabled rather than hidden once it is already true, so the
+              month label does not shift sideways as the button comes and
+              goes. */}
+          <button
+            type="button"
+            onClick={goToToday}
+            disabled={onToday}
+            className="text-xs font-semibold px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-transparent"
+          >
+            Today
           </button>
         </div>
       </div>
