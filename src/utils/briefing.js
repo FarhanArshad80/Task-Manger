@@ -125,6 +125,24 @@ export function buildBriefing(tasks, today = todayKey()) {
     });
   }
 
+  // Everything above is what is left to do. A panel made only of that reads
+  // as a list of complaints on the day the most got done, so the day's own
+  // work gets a line - after the warnings, which still come first.
+  const doneToday = (tasks || []).filter(
+    (task) => task?.status === 'Completed' && task.completedAt === today
+  );
+
+  if (doneToday.length > 0) {
+    notes.push({
+      id: 'done-today',
+      tone: 'good',
+      text:
+        doneToday.length === 1
+          ? `"${doneToday[0].title}" finished today.`
+          : `${plural(doneToday.length, 'task')} finished today.`,
+    });
+  }
+
   const streak = completionStreak(tasks, today);
 
   if (streak.days > 1) {
