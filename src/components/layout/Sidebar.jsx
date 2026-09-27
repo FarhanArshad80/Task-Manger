@@ -3,20 +3,12 @@ import { NavLink } from 'react-router-dom';
 import { sidebarLinks } from '../../config/sidebarNav';
 import { AppContext } from '../../context/AppContext';
 import { todayKey } from '../../utils/streak';
+import { countOverdue } from '../../utils/overdue';
 
 // Late work was only ever visible from inside the task table, as red rows
 // among everything else - and only once somebody had gone there to look.
 // The sidebar is on every page, so it is where a count of what has slipped
 // can be seen without asking for it.
-//
-// Same rule as the table's Overdue filter: a deadline before today on work
-// that is not finished. Completed work is not late however late it was
-// finished.
-function countOverdue(tasks, today) {
-  return (tasks || []).filter(
-    (task) => Boolean(task.deadline) && task.deadline < today && task.status !== 'Completed'
-  ).length;
-}
 
 const Sidebar = () => {
   const { tasks } = useContext(AppContext);
