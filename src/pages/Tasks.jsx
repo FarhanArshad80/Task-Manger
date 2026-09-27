@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import TaskTable from '../components/data/TaskTable';
@@ -32,13 +32,57 @@ const DEADLINE_SHORTCUTS = [
   { label: 'Next week', day: () => shiftDay(todayKey(), 7) },
 ];
 
+// A task half typed into the form, kept while the tab is open.
+//
+// The form lives on this page, so glancing at the calendar to check a date
+// before filling in the deadline threw away the title, the tags and the
+// schedule already chosen - the moment you came back to finish it, it was
+// gone. Session storage rather than local: a draft is a thought in progress,
+// and one that reappeared in a new window days later would be a stranger.
+const DRAFT_KEY = 'taskengine.draft';
+
+const EMPTY_DRAFT = { title: '', deadline: '', priority: 'Medium', tags: '', repeat: REPEAT_NONE };
+
+function loadDraft() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(DRAFT_KEY));
+    if (!saved || typeof saved !== 'object') return EMPTY_DRAFT;
+
+    // Field by field, so a draft written by an older build cannot put
+    // something that is not a string into a controlled input.
+    return Object.fromEntries(
+      Object.entries(EMPTY_DRAFT).map(([key, fallback]) => [
+        key,
+        typeof saved[key] === 'string' ? saved[key] : fallback,
+      ])
+    );
+  } catch {
+    return EMPTY_DRAFT;
+  }
+}
+
 const Tasks = () => {
   const { addTask } = useContext(AppContext);
-  const [title, setTitle] = useState('');
-  const [deadline, setDeadline] = useState('');
-  const [priority, setPriority] = useState('Medium');
-  const [tags, setTags] = useState('');
-  const [repeat, setRepeat] = useState(REPEAT_NONE);
+  const [draft] = useState(loadDraft);
+  const [title, setTitle] = useState(draft.title);
+  const [deadline, setDeadline] = useState(draft.deadline);
+  const [priority, setPriority] = useState(draft.priority);
+  const [tags, setTags] = useState(draft.tags);
+  const [repeat, setRepeat] = useState(draft.repeat);
+
+  useEffect(() => {
+    const current = { title, deadline, priority, tags, repeat };
+    const untouched = Object.keys(EMPTY_DRAFT).every((key) => current[key] === EMPTY_DRAFT[key]);
+
+    try {
+      // An empty form is not a draft. Removing the key keeps a submitted
+      // task from leaving a copy of itself behind.
+      if (untouched) sessionStorage.removeItem(DRAFT_KEY);
+      else sessionStorage.setItem(DRAFT_KEY, JSON.stringify(current));
+    } catch {
+      // Storage unavailable - the form still works, it just forgets.
+    }
+  }, [title, deadline, priority, tags, repeat]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
