@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import TaskTable from '../components/data/TaskTable';
@@ -69,6 +69,31 @@ const Tasks = () => {
   const [priority, setPriority] = useState(draft.priority);
   const [tags, setTags] = useState(draft.tags);
   const [repeat, setRepeat] = useState(draft.repeat);
+  const titleRef = useRef(null);
+
+  // "n" starts a new task, as it does in most trackers - the table's "/"
+  // already gets to search without the mouse, and adding work is the other
+  // thing this page is for. Same guards as the slash: never while typing
+  // into something, never with a modifier held.
+  useEffect(() => {
+    const focusTitle = (event) => {
+      if (event.key.toLowerCase() !== 'n' || event.ctrlKey || event.metaKey || event.altKey) return;
+
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      titleRef.current?.focus();
+    };
+
+    window.addEventListener('keydown', focusTitle);
+    return () => window.removeEventListener('keydown', focusTitle);
+  }, []);
 
   useEffect(() => {
     const current = { title, deadline, priority, tags, repeat };
@@ -113,7 +138,9 @@ const Tasks = () => {
         <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4">
           <input
             type="text"
+            ref={titleRef}
             placeholder="Initialize a new objective..."
+            title="Press N to jump here"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
