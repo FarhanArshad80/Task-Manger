@@ -1,14 +1,20 @@
 import React, { useContext } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Sun, Moon } from 'lucide-react';
 import { AppContext } from '../../context/AppContext';
+import { pageName } from '../../config/sidebarNav';
 
 const Navbar = () => {
   const { theme, toggleTheme } = useContext(AppContext);
+  const { pathname } = useLocation();
 
   return (
     <header className="h-16 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 flex items-center justify-between">
+      {/* The bar used to read "Workspace / Production Development" on every
+          page, which is a breadcrumb that never moves - so it said nothing.
+          It now names where you are, which is what a breadcrumb is for. */}
       <div className="text-sm font-medium text-slate-500 dark:text-slate-400">
-        Workspace / Production Development
+        Workspace / <span className="text-slate-700 dark:text-slate-200">{pageName(pathname)}</span>
       </div>
       <div className="flex items-center space-x-4">
         <button 
