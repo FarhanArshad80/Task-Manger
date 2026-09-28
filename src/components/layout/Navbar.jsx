@@ -33,8 +33,15 @@ const Navbar = () => {
         Workspace / <span className="text-slate-700 dark:text-slate-200">{page}</span>
       </div>
       <div className="flex items-center space-x-4">
-        <button 
+        {/* An icon on its own is a button with no name: a screen reader
+            announced it as "button", and a mouse hovering over it got no
+            hint either. It says which way it will switch, not which mode
+            is on, because that is what pressing it does. */}
+        <button
+          type="button"
           onClick={toggleTheme}
+          aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
           className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
         >
           {theme === 'light' ? <Moon className="h-5 w-5 text-slate-600" /> : <Sun className="h-5 w-5 text-amber-400" />}
