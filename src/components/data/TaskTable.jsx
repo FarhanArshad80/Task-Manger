@@ -242,6 +242,36 @@ const TaskTable = () => {
     return () => window.removeEventListener('keydown', focusSearch);
   }, []);
 
+  // Escape lets go of the selection, the way it closes most things that are
+  // "in the middle of" something. The bulk bar sits in place of the row
+  // counter until the selection is dropped, and the only way to drop it was
+  // a small link at the far end of that bar.
+  //
+  // Not while a field has the key: Escape in the row editor already means
+  // "discard this edit", and that must not also throw away the selection.
+  // A checkbox is the exception, since ticking one is how the selection was
+  // made and focus is still sitting on it.
+  useEffect(() => {
+    const dropSelection = (event) => {
+      if (event.key !== 'Escape') return;
+
+      const target = event.target;
+      const isCheckbox = target instanceof HTMLInputElement && target.type === 'checkbox';
+      if (
+        target instanceof HTMLElement &&
+        !isCheckbox &&
+        (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+      ) {
+        return;
+      }
+
+      setSelected((current) => (current.size === 0 ? current : new Set()));
+    };
+
+    window.addEventListener('keydown', dropSelection);
+    return () => window.removeEventListener('keydown', dropSelection);
+  }, []);
+
   const availableTags = useMemo(() => collectTags(tasks), [tasks]);
 
   // A tag can go out of use entirely — the last task carrying it is deleted
@@ -801,6 +831,8 @@ const TaskTable = () => {
           <button
             type="button"
             onClick={() => setSelected(new Set())}
+            title="Or press Escape"
+            aria-keyshortcuts="Escape"
             className="ml-auto text-xs font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
           >
             Clear selection
