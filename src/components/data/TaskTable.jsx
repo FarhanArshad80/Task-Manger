@@ -1132,6 +1132,10 @@ const TaskTable = () => {
                   <select
                     value={item.status}
                     onChange={(e) => updateTaskStatus(item.id, e.target.value)}
+                    // Every row has one of these, and without a name a screen
+                    // reader tabbing down the column heard "Pending, combo
+                    // box" over and over with no way to tell whose it was.
+                    aria-label={`Status of "${item.title}"`}
                     className="bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium px-2 py-1 rounded-md focus:outline-none border border-slate-200 dark:border-slate-600 cursor-pointer text-xs"
                   >
                     <option value="Pending" className="bg-white dark:bg-slate-800">Pending</option>
