@@ -12,7 +12,15 @@ import { countOverdue } from '../../utils/overdue';
 
 const Sidebar = () => {
   const { tasks } = useContext(AppContext);
-  const overdue = countOverdue(tasks, todayKey());
+  const today = todayKey();
+  const overdue = countOverdue(tasks, today);
+  // What is due today and still open. The overdue badge says what has
+  // already slipped; this is what will slip tonight if nothing happens, and
+  // it belongs on the calendar link because that is the page organised by
+  // day.
+  const dueToday = tasks.filter(
+    (task) => task.deadline === today && task.status !== 'Completed'
+  ).length;
 
   return (
     <aside className="w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 min-h-screen p-4 flex flex-col justify-between md:flex">
@@ -48,6 +56,15 @@ const Sidebar = () => {
                     aria-label={`${overdue} overdue`}
                   >
                     {overdue}
+                  </span>
+                )}
+                {link.path === '/calendar' && dueToday > 0 && (
+                  <span
+                    className="ml-auto rounded-full bg-indigo-500/15 px-2 py-0.5 font-mono text-[11px] font-semibold text-indigo-500"
+                    title={`${dueToday} due today`}
+                    aria-label={`${dueToday} due today`}
+                  >
+                    {dueToday}
                   </span>
                 )}
               </NavLink>
