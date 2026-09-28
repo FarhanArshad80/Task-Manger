@@ -62,7 +62,7 @@ function loadDraft() {
 }
 
 const Tasks = () => {
-  const { addTask } = useContext(AppContext);
+  const { tasks, addTask } = useContext(AppContext);
   const [draft] = useState(loadDraft);
   const [title, setTitle] = useState(draft.title);
   const [deadline, setDeadline] = useState(draft.deadline);
@@ -108,6 +108,20 @@ const Tasks = () => {
       // Storage unavailable - the form still works, it just forgets.
     }
   }, [title, deadline, priority, tags, repeat]);
+
+  // An open task already carrying this title, if there is one. The same job
+  // typed in twice - once on Monday, again on Wednesday when it came up in a
+  // meeting - becomes two rows that each get half the updates. Compared
+  // without case or surrounding space, since that is not what makes two
+  // jobs different. Finished tasks do not count: doing the thing again is
+  // exactly what a new one is for.
+  const existing = title.trim()
+    ? tasks.find(
+        (task) =>
+          task.status !== 'Completed' &&
+          task.title.trim().toLowerCase() === title.trim().toLowerCase()
+      )
+    : null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -219,6 +233,11 @@ const Tasks = () => {
             in without a word and land on the board already overdue. Said,
             not refused: logging something that was due yesterday is a real
             thing to do. */}
+        {existing && (
+          <p role="status" className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+            "{existing.title}" is already on the board ({(existing.status || 'Pending').toLowerCase()}).
+          </p>
+        )}
         {deadline && deadline < todayKey() && (
           <p role="status" className="mt-2 text-xs text-amber-600 dark:text-amber-400">
             That date has already passed — this task will start out overdue.
