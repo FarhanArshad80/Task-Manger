@@ -1005,7 +1005,16 @@ const TaskTable = () => {
                 ) : (
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="truncate">{item.title}</span>
+                      {/* Double-clicking text to change it is what every
+                          spreadsheet taught people to try first, and here it
+                          did nothing — the pencil was five columns away. */}
+                      <span
+                        className="truncate cursor-text"
+                        onDoubleClick={() => startEditing(item)}
+                        title="Double-click to edit"
+                      >
+                        {item.title}
+                      </span>
                       {/* Said on the row rather than only in the editor: the
                           reason this task will be back tomorrow is not
                           something anyone should have to open it to find. */}
