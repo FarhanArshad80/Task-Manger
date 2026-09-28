@@ -523,6 +523,22 @@ const TaskTable = () => {
     tagFilter !== ALL ||
     dueFilter !== ALL;
 
+  // Each filter that is narrowing the table, with the way to lift just that
+  // one. An empty table that only says "no tasks match" leaves somebody
+  // reading five controls to find the one that emptied it — and clearing
+  // everything throws away the four that were fine.
+  const activeFilters = [
+    query.trim() && { key: 'query', label: `"${query.trim()}"`, clear: () => setQuery('') },
+    statusFilter !== ALL && { key: 'status', label: statusFilter, clear: () => setStatusFilter(ALL) },
+    priorityFilter !== ALL && {
+      key: 'priority', label: `${priorityFilter} priority`, clear: () => setPriorityFilter(ALL),
+    },
+    tagFilter !== ALL && { key: 'tag', label: `#${tagFilter}`, clear: () => setTagFilter(ALL) },
+    dueFilter !== ALL && {
+      key: 'due', label: DUE_FILTERS[dueFilter].label, clear: () => setDueFilter(ALL),
+    },
+  ].filter(Boolean);
+
   const clearFilters = () => {
     setQuery('');
     setStatusFilter(ALL);
@@ -1322,6 +1338,23 @@ const TaskTable = () => {
                 {tasks.length === 0
                   ? 'No tasks yet — deploy one above to get started.'
                   : 'No tasks match the current filters.'}
+                {tasks.length > 0 && activeFilters.length > 0 && (
+                  <span className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+                    {activeFilters.map((filter) => (
+                      <button
+                        key={filter.key}
+                        type="button"
+                        onClick={filter.clear}
+                        title="Remove this filter"
+                        aria-label={`Remove the ${filter.label} filter`}
+                        className="flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 text-xs text-slate-600 transition-colors hover:border-indigo-400 hover:text-indigo-500 dark:border-slate-700 dark:text-slate-300"
+                      >
+                        {filter.label}
+                        <X className="h-3 w-3" />
+                      </button>
+                    ))}
+                  </span>
+                )}
                 {isFiltered && tasks.length > 0 && (
                   <button
                     type="button"
