@@ -380,11 +380,38 @@ const TaskTable = () => {
     }
   }, [selected, allVisibleSelected]);
 
-  const toggleRow = (id) => {
+  // The row last ticked or unticked by hand, which a shift-click measures a
+  // range from.
+  const anchorRef = useRef(null);
+
+  // Shift-click ticks every row between the last one clicked and this one,
+  // the way it works in a mail inbox or a file list. Picking out fifteen
+  // adjacent rows for a bulk edit meant fifteen separate clicks.
+  //
+  // The range takes whatever the clicked row is turning into, so the same
+  // gesture un-ticks a run as easily as it ticks one. It is measured in the
+  // order on screen, since that is the order somebody is looking at.
+  const toggleRow = (id, extend = false) => {
+    const anchor = anchorRef.current;
+    anchorRef.current = id;
+
     setSelected((current) => {
       const next = new Set(current);
+      const turningOn = !current.has(id);
+      const from = extend && anchor ? sortedTasks.findIndex((task) => task.id === anchor) : -1;
+      const to = sortedTasks.findIndex((task) => task.id === id);
 
-      if (!next.delete(id)) next.add(id);
+      if (from === -1 || to === -1) {
+        if (turningOn) next.add(id);
+        else next.delete(id);
+
+        return next;
+      }
+
+      for (const task of sortedTasks.slice(Math.min(from, to), Math.max(from, to) + 1)) {
+        if (turningOn) next.add(task.id);
+        else next.delete(task.id);
+      }
 
       return next;
     });
@@ -962,8 +989,11 @@ const TaskTable = () => {
                 <input
                   type="checkbox"
                   checked={selected.has(item.id)}
-                  onChange={() => toggleRow(item.id)}
+                  // A checkbox's change arrives on its click, so the click
+                  // is where the shift key can be read from.
+                  onChange={(e) => toggleRow(item.id, e.nativeEvent.shiftKey)}
                   aria-label={`Select "${item.title}"`}
+                  title="Shift-click to select a range"
                   className="h-4 w-4 cursor-pointer accent-indigo-500"
                 />
               </td>
