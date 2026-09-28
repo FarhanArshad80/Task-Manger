@@ -36,6 +36,33 @@ const UndoBar = () => {
     return () => clearInterval(tick);
   }, [recentlyDeleted, dismissDeleted]);
 
+  // Ctrl+Z (Cmd+Z on a Mac) is what anyone reaches for the instant they see
+  // the wrong row vanish, before their eye has found the button. Only while
+  // the offer is open, and never inside a text field, where the same keys
+  // already undo typing and taking them over would lose a sentence.
+  useEffect(() => {
+    if (!recentlyDeleted) return undefined;
+
+    const undoOnKey = (event) => {
+      if (event.key.toLowerCase() !== 'z' || !(event.ctrlKey || event.metaKey)) return;
+      if (event.shiftKey || event.altKey) return;
+
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      restoreDeleted();
+    };
+
+    window.addEventListener('keydown', undoOnKey);
+    return () => window.removeEventListener('keydown', undoOnKey);
+  }, [recentlyDeleted, restoreDeleted]);
+
   if (!recentlyDeleted) return null;
 
   const label =
@@ -54,6 +81,8 @@ const UndoBar = () => {
         <button
           type="button"
           onClick={restoreDeleted}
+          title="Undo (Ctrl+Z)"
+          aria-keyshortcuts="Control+Z Meta+Z"
           className="flex shrink-0 items-center gap-1.5 rounded-md bg-white/10 px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-white/20"
         >
           <Undo2 className="h-3.5 w-3.5" />
