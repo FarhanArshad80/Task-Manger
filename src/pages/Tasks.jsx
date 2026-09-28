@@ -214,6 +214,16 @@ const Tasks = () => {
             );
           })}
         </div>
+        {/* A date picked a day too far back — the arrow key pressed once
+            too often, last month's page left open in the popup — used to go
+            in without a word and land on the board already overdue. Said,
+            not refused: logging something that was due yesterday is a real
+            thing to do. */}
+        {deadline && deadline < todayKey() && (
+          <p role="status" className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+            That date has already passed — this task will start out overdue.
+          </p>
+        )}
       </Card>
       <Card>
         <TaskTable />
