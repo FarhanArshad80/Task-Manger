@@ -1,9 +1,10 @@
 import React, { useContext, useMemo } from 'react';
 import Card from '../components/ui/Card';
-import { Activity, PieChart, ShieldCheck, ListChecks, Tags } from 'lucide-react';
+import { Activity, PieChart, ShieldCheck, ListChecks, Tags, Flag } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 import { tagStats } from '../utils/tags';
 import { todayKey } from '../utils/streak';
+import { openByPriority } from '../utils/goals';
 
 const STATUS_COLORS = {
   done: { bar: 'bg-emerald-500', text: 'text-emerald-500', dot: 'bg-emerald-500', hex: '#10b981' },
@@ -113,6 +114,8 @@ const Analytics = () => {
   const { tasks = [] } = useContext(AppContext);
   const { total, statusBreakdown, successRate, doneCount, accuracyPct } = useAnalytics(tasks);
   const byTag = useMemo(() => tagStats(tasks, todayKey()), [tasks]);
+  const openPriorities = useMemo(() => openByPriority(tasks), [tasks]);
+  const openCount = openPriorities.reduce((sum, row) => sum + row.count, 0);
 
   return (
     <div className="space-y-6">
@@ -197,6 +200,38 @@ const Analytics = () => {
                 {accuracyPct === null
                   ? 'Needs completedAt + due date to calculate'
                   : 'Tasks completed on or before their due date'}
+              </p>
+            </div>
+          </Card>
+
+          {/* How much of what is left is urgent. A board with six open tasks
+              reads very differently when five of them are High. */}
+          <Card className="flex items-start space-x-3">
+            <div className="p-2 bg-rose-500/10 rounded-lg text-rose-500">
+              <Flag className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wide">Open by Priority</h4>
+              {openCount === 0 ? (
+                <p className="text-lg font-bold mt-0.5">Nothing open</p>
+              ) : (
+                <p className="text-lg font-bold mt-0.5">
+                  {openPriorities.map(({ level, count }, i) => (
+                    <span key={level}>
+                      {i > 0 && <span className="text-slate-300 dark:text-slate-600"> · </span>}
+                      <span className={count > 0 && level === 'High' ? 'text-rose-500' : undefined}>
+                        {count} {level}
+                      </span>
+                    </span>
+                  ))}
+                </p>
+              )}
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {total === 0
+                  ? 'No tasks on the board yet'
+                  : openCount === 0
+                  ? 'Every task on the board is completed'
+                  : `${openCount} unfinished ${openCount === 1 ? 'task' : 'tasks'}, split by priority`}
               </p>
             </div>
           </Card>

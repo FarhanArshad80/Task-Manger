@@ -129,3 +129,24 @@ export function weeklyPace(tasks, today = todayKey()) {
 
   return { thisWeek, lastWeek };
 }
+
+// Unfinished work split by priority, highest first.
+//
+// A task saved before the priority picker existed has none of its own and is
+// counted as Medium, the same default the table and the calendar draw it
+// with, so the three figures always add up to the open total.
+export const PRIORITY_LEVELS = ['High', 'Medium', 'Low'];
+
+export function openByPriority(tasks) {
+  const counts = Object.fromEntries(PRIORITY_LEVELS.map((level) => [level, 0]));
+
+  for (const task of tasks || []) {
+    if (!task || isDone(task)) continue;
+
+    const level = PRIORITY_LEVELS.includes(task.priority) ? task.priority : 'Medium';
+
+    counts[level] += 1;
+  }
+
+  return PRIORITY_LEVELS.map((level) => ({ level, count: counts[level] }));
+}
