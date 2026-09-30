@@ -3,7 +3,7 @@ import Card from '../components/ui/Card';
 import ProgressChart from '../components/data/ProgressChart';
 import { AppContext } from '../context/AppContext';
 import { completionStreak } from '../utils/streak';
-import { deliveryRate, onTimeRate, momentumRate } from '../utils/goals';
+import { deliveryRate, onTimeRate, momentumRate, weeklyPace } from '../utils/goals';
 import { Target, TrendingUp, Award, Flame } from 'lucide-react';
 
 // One card per measure. `read` returns null when there is nothing behind the
@@ -67,6 +67,7 @@ const Progress = () => {
   const { tasks } = useContext(AppContext);
   const completedCount = tasks.filter(t => t.status === 'Completed').length;
   const streak = useMemo(() => completionStreak(tasks), [tasks]);
+  const pace = useMemo(() => weeklyPace(tasks), [tasks]);
   const goals = useMemo(
     () => GOAL_CARDS.map((card) => ({ ...card, result: card.read(tasks) })),
     [tasks]
@@ -113,6 +114,16 @@ const Progress = () => {
               </p>
             </div>
           </div>
+          {/* Days on a run say nothing about how much got done on them, so
+              the count of finished work sits underneath, with last week's
+              beside it to read it against. */}
+          {pace && (
+            <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
+              <span className="font-bold font-mono text-slate-700 dark:text-slate-200">{pace.thisWeek}</span>
+              {` ${pace.thisWeek === 1 ? 'task' : 'tasks'} finished in the last 7 days`}
+              {` · ${pace.lastWeek} the week before`}
+            </p>
+          )}
         </Card>
       </div>
 

@@ -99,3 +99,33 @@ export function momentumRate(tasks, today = todayKey()) {
 
   return { pct: share(active, MOMENTUM_WINDOW), active, window: MOMENTUM_WINDOW };
 }
+
+// Tasks finished in the last seven days against the seven before them.
+//
+// The streak and momentum figures count days, so a day with one small job
+// and a day with ten look the same to both. This counts the work itself,
+// and puts it beside the week before so the number has something to be
+// read against. Null when nothing has been finished in either week, where a
+// "0 against 0" would only be noise.
+export const PACE_WINDOW = 7;
+
+export function weeklyPace(tasks, today = todayKey()) {
+  const thisStart = shiftDay(today, -(PACE_WINDOW - 1));
+  const lastStart = shiftDay(thisStart, -PACE_WINDOW);
+  let thisWeek = 0;
+  let lastWeek = 0;
+
+  for (const task of tasks || []) {
+    if (!isDone(task)) continue;
+
+    const day = doneDay(task);
+
+    if (!day || day > today) continue;
+    if (day >= thisStart) thisWeek += 1;
+    else if (day >= lastStart) lastWeek += 1;
+  }
+
+  if (thisWeek === 0 && lastWeek === 0) return null;
+
+  return { thisWeek, lastWeek };
+}
