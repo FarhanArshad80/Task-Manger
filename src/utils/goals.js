@@ -150,3 +150,38 @@ export function openByPriority(tasks) {
 
   return PRIORITY_LEVELS.map((level) => ({ level, count: counts[level] }));
 }
+
+// The day of the week most work gets finished on.
+//
+// The streak and the weekly pace say how much is getting done, not when.
+// Knowing that Tuesdays carry the week is what lets someone plan the heavy
+// task for a Tuesday instead of hoping for one. Null until a few tasks have
+// been finished, and on a tie, so one lucky day is not reported as a habit.
+export const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+export const WEEKDAY_MIN_DONE = 3;
+
+export function busiestWeekday(tasks) {
+  const counts = WEEKDAYS.map(() => 0);
+  let total = 0;
+
+  for (const task of tasks || []) {
+    if (!isDone(task)) continue;
+
+    const day = doneDay(task);
+
+    if (!day) continue;
+
+    const [y, m, d] = day.split('-').map(Number);
+
+    counts[new Date(y, m - 1, d).getDay()] += 1;
+    total += 1;
+  }
+
+  if (total < WEEKDAY_MIN_DONE) return null;
+
+  const top = Math.max(...counts);
+
+  if (counts.filter((count) => count === top).length > 1) return null;
+
+  return { day: WEEKDAYS[counts.indexOf(top)], count: top, total };
+}
