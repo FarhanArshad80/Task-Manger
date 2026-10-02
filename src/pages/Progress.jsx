@@ -3,7 +3,7 @@ import Card from '../components/ui/Card';
 import ProgressChart from '../components/data/ProgressChart';
 import { AppContext } from '../context/AppContext';
 import { completionStreak } from '../utils/streak';
-import { deliveryRate, onTimeRate, momentumRate, weeklyPace, busiestWeekday } from '../utils/goals';
+import { deliveryRate, onTimeRate, momentumRate, weeklyPace, busiestWeekday, turnaround } from '../utils/goals';
 import { Target, TrendingUp, Award, Flame } from 'lucide-react';
 
 // One card per measure. `read` returns null when there is nothing behind the
@@ -69,6 +69,7 @@ const Progress = () => {
   const streak = useMemo(() => completionStreak(tasks), [tasks]);
   const pace = useMemo(() => weeklyPace(tasks), [tasks]);
   const peakDay = useMemo(() => busiestWeekday(tasks), [tasks]);
+  const wait = useMemo(() => turnaround(tasks), [tasks]);
   const goals = useMemo(
     () => GOAL_CARDS.map((card) => ({ ...card, result: card.read(tasks) })),
     [tasks]
@@ -130,6 +131,15 @@ const Progress = () => {
               {'Most work gets finished on '}
               <span className="font-bold text-slate-700 dark:text-slate-200">{peakDay.day}s</span>
               {` · ${peakDay.count} of ${peakDay.total}`}
+            </p>
+          )}
+          {wait && (
+            <p className={`${pace || peakDay ? 'mt-1' : 'mt-4'} text-xs text-slate-500 dark:text-slate-400`}>
+              {'Finished work usually takes '}
+              <span className="font-bold text-slate-700 dark:text-slate-200">
+                {wait.days === 0 ? 'under a day' : `${wait.days} ${wait.days === 1 ? 'day' : 'days'}`}
+              </span>
+              {` from being added · median of ${wait.count}`}
             </p>
           )}
         </Card>

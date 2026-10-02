@@ -185,3 +185,46 @@ export function busiestWeekday(tasks) {
 
   return { day: WEEKDAYS[counts.indexOf(top)], count: top, total };
 }
+
+// How long finished work usually took, from the day it was added to the day
+// it was ticked off.
+//
+// The pace and the streak count what got finished, not how long it sat
+// first. The median rather than the mean, because one task left open for a
+// quarter would otherwise drag the figure for every quick job around it.
+// Null until a few tasks have both dates, so two lucky ones are not a trend.
+export const TURNAROUND_MIN_DONE = 3;
+
+function dayNumber(key) {
+  const [y, m, d] = key.split('-').map(Number);
+
+  return Date.UTC(y, m - 1, d) / 86400000;
+}
+
+export function turnaround(tasks) {
+  const spans = [];
+
+  for (const task of tasks || []) {
+    if (!isDone(task)) continue;
+
+    const done = doneDay(task);
+    const added = typeof task.date === 'string' && DAY_KEY.test(task.date) ? task.date : null;
+
+    if (!done || !added) continue;
+
+    // A completion stamped before the task was created is a bad record, not
+    // a negative wait — usually an import carrying dates from elsewhere.
+    const span = dayNumber(done) - dayNumber(added);
+
+    if (span >= 0) spans.push(span);
+  }
+
+  if (spans.length < TURNAROUND_MIN_DONE) return null;
+
+  spans.sort((a, b) => a - b);
+
+  const mid = Math.floor(spans.length / 2);
+  const median = spans.length % 2 ? spans[mid] : (spans[mid - 1] + spans[mid]) / 2;
+
+  return { days: Math.round(median), count: spans.length };
+}
