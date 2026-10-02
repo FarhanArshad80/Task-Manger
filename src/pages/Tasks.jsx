@@ -123,6 +123,22 @@ const Tasks = () => {
       )
     : null;
 
+  // The form now outlives a trip to another page, which also means a task
+  // somebody decided against sits there waiting until each of its five
+  // fields is emptied by hand. One press puts the form back the way a new
+  // tab opens it, and the effect above drops the saved draft with it.
+  const hasDraft = Object.keys(EMPTY_DRAFT).some(
+    (key) => ({ title, deadline, priority, tags, repeat })[key] !== EMPTY_DRAFT[key]
+  );
+
+  const resetForm = () => {
+    setTitle(EMPTY_DRAFT.title);
+    setDeadline(EMPTY_DRAFT.deadline);
+    setPriority(EMPTY_DRAFT.priority);
+    setTags(EMPTY_DRAFT.tags);
+    setRepeat(EMPTY_DRAFT.repeat);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
@@ -138,11 +154,7 @@ const Tasks = () => {
       tags,                                          // cleaned and capped by the context
       repeat,                                        // standing work comes back when it is ticked off
     });
-    setTitle('');
-    setDeadline('');
-    setPriority('Medium');
-    setTags('');
-    setRepeat(REPEAT_NONE);
+    resetForm();
   };
 
   return (
@@ -227,6 +239,15 @@ const Tasks = () => {
               </button>
             );
           })}
+          {hasDraft && (
+            <button
+              type="button"
+              onClick={resetForm}
+              className="ml-auto text-xs font-medium text-slate-500 hover:text-rose-500 transition-colors"
+            >
+              Discard draft
+            </button>
+          )}
         </div>
         {/* A date picked a day too far back — the arrow key pressed once
             too often, last month's page left open in the popup — used to go
