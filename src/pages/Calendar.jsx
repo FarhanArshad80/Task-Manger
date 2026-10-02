@@ -72,7 +72,7 @@ function dayLabel(dateKey) {
 }
 
 const Calendar = () => {
-  const { tasks = [], addTask } = useContext(AppContext);
+  const { tasks = [], addTask, updateTaskStatus } = useContext(AppContext);
   const [cursor, setCursor] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -283,9 +283,23 @@ const Calendar = () => {
                     {/* Finished work stays in the list, struck through: the
                         day did have it, and hiding it would make a day that
                         went well look empty. */}
-                    <span className={`text-sm font-medium truncate ${done ? 'line-through opacity-60' : ''}`}>
-                      {task.title}
-                    </span>
+                    {/* Ticked off where it was read. Coming to the calendar
+                        to see what today held and then having to find the
+                        same row again on the task list to close it was two
+                        pages for one act. Unticking puts it back to
+                        Pending, the status a task is created with. */}
+                    <label className="flex items-center gap-2 min-w-0 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={done}
+                        onChange={() => updateTaskStatus(task.id, done ? 'Pending' : 'Completed')}
+                        aria-label={`Mark "${task.title}" ${done ? 'not done' : 'done'}`}
+                        className="h-4 w-4 shrink-0 accent-indigo-500"
+                      />
+                      <span className={`text-sm font-medium truncate ${done ? 'line-through opacity-60' : ''}`}>
+                        {task.title}
+                      </span>
+                    </label>
                     <span className="text-[11px] whitespace-nowrap opacity-80">
                       {task.priority || 'Medium'} · {task.status || 'Pending'}
                     </span>
