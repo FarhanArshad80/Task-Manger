@@ -228,3 +228,32 @@ export function turnaround(tasks) {
 
   return { days: Math.round(median), count: spans.length };
 }
+
+// The unfinished task that has been on the board longest, by the day it was
+// added.
+//
+// The open count says how much is left, not whether any of it is quietly
+// going stale. A job added six weeks ago and never started is the one most
+// worth a look, and nothing else on the page names it. Tasks without a
+// usable added date are skipped rather than guessed at; on a tie the one
+// listed first wins. Null when nothing open has a date.
+export function oldestOpen(tasks, today = todayKey()) {
+  let oldest = null;
+
+  for (const task of tasks || []) {
+    if (!task || isDone(task)) continue;
+
+    const added = typeof task.date === 'string' && DAY_KEY.test(task.date) ? task.date : null;
+
+    if (!added || added > today) continue;
+    if (!oldest || added < oldest.added) oldest = { task, added };
+  }
+
+  if (!oldest) return null;
+
+  return {
+    title: oldest.task.title,
+    added: oldest.added,
+    days: dayNumber(today) - dayNumber(oldest.added),
+  };
+}

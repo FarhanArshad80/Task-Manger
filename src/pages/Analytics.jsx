@@ -1,10 +1,10 @@
 import React, { useContext, useMemo } from 'react';
 import Card from '../components/ui/Card';
-import { Activity, PieChart, ShieldCheck, ListChecks, Tags, Flag } from 'lucide-react';
+import { Activity, PieChart, ShieldCheck, ListChecks, Tags, Flag, Hourglass } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 import { tagStats } from '../utils/tags';
 import { todayKey } from '../utils/streak';
-import { openByPriority } from '../utils/goals';
+import { openByPriority, oldestOpen } from '../utils/goals';
 
 const STATUS_COLORS = {
   done: { bar: 'bg-emerald-500', text: 'text-emerald-500', dot: 'bg-emerald-500', hex: '#10b981' },
@@ -116,6 +116,7 @@ const Analytics = () => {
   const byTag = useMemo(() => tagStats(tasks, todayKey()), [tasks]);
   const openPriorities = useMemo(() => openByPriority(tasks), [tasks]);
   const openCount = openPriorities.reduce((sum, row) => sum + row.count, 0);
+  const stalest = useMemo(() => oldestOpen(tasks, todayKey()), [tasks]);
 
   return (
     <div className="space-y-6">
@@ -233,6 +234,34 @@ const Analytics = () => {
                   ? 'Every task on the board is completed'
                   : `${openCount} unfinished ${openCount === 1 ? 'task' : 'tasks'}, split by priority`}
               </p>
+            </div>
+          </Card>
+
+          {/* The open count says how much is left, not whether any of it
+              has been sitting there for weeks. This names the one that has. */}
+          <Card className="flex items-start space-x-3">
+            <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500">
+              <Hourglass className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wide">Oldest Open Task</h4>
+              {stalest ? (
+                <>
+                  <p className="text-lg font-bold mt-0.5 truncate" title={stalest.title}>
+                    {stalest.title}
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    {stalest.days === 0
+                      ? 'Added today'
+                      : `Added ${stalest.days} ${stalest.days === 1 ? 'day' : 'days'} ago, still not finished`}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-lg font-bold mt-0.5">—</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">No unfinished task with an added date</p>
+                </>
+              )}
             </div>
           </Card>
         </div>
