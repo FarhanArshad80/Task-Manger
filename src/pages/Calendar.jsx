@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -148,6 +148,33 @@ const Calendar = () => {
   const goToPrevMonth = () => setCursor(new Date(year, month - 1, 1));
   const goToNextMonth = () => setCursor(new Date(year, month + 1, 1));
 
+  // The left and right arrow keys page the months, so looking a quarter
+  // ahead is three presses rather than three trips to a small chevron.
+  // Same guards as the other shortcuts: never while typing into something
+  // (the add form's caret needs those keys), never with a modifier held.
+  // Functional updates, so the listener does not need re-adding per month.
+  useEffect(() => {
+    const pageMonths = (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      const step = event.key === 'ArrowLeft' ? -1 : 1;
+      setCursor((prev) => new Date(prev.getFullYear(), prev.getMonth() + step, 1));
+    };
+
+    window.addEventListener('keydown', pageMonths);
+    return () => window.removeEventListener('keydown', pageMonths);
+  }, []);
+
   // Paging through the months is one press each way, which makes getting
   // back from a deadline in March a dozen presses on the same arrow. Today
   // is the day most people came to the calendar to check, so returning to it
@@ -173,11 +200,11 @@ const Calendar = () => {
           </p>
         </div>
         <div className="flex items-center space-x-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 shadow-sm self-start">
-          <button onClick={goToPrevMonth} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded">
+          <button onClick={goToPrevMonth} title="Previous month (Left arrow)" aria-label="Previous month" className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded">
             <ChevronLeft className="h-4 w-4" />
           </button>
           <span className="text-xs font-bold px-3 font-mono">{monthLabel}</span>
-          <button onClick={goToNextMonth} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded">
+          <button onClick={goToNextMonth} title="Next month (Right arrow)" aria-label="Next month" className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded">
             <ChevronRight className="h-4 w-4" />
           </button>
           {/* Disabled rather than hidden once it is already true, so the
