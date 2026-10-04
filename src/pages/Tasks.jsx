@@ -29,6 +29,19 @@ const DEADLINE_SHORTCUTS = [
       return shiftDay(today, ahead === 0 ? 7 : ahead);
     },
   },
+  {
+    // The start of next week, which is what "first thing next week" means.
+    // On a Monday that is a week today, never today itself.
+    label: 'Monday',
+    day: () => {
+      const today = todayKey();
+      const [y, m, d] = today.split('-').map(Number);
+      const weekday = new Date(y, m - 1, d).getDay();
+      const ahead = (1 - weekday + 7) % 7;
+
+      return shiftDay(today, ahead === 0 ? 7 : ahead);
+    },
+  },
   { label: 'Next week', day: () => shiftDay(todayKey(), 7) },
 ];
 
