@@ -56,6 +56,23 @@ const DRAFT_KEY = 'taskengine.draft';
 
 const EMPTY_DRAFT = { title: '', deadline: '', priority: 'Medium', tags: '', repeat: REPEAT_NONE };
 
+// "#words" typed into the title, the way tags are written everywhere else.
+// Reaching across to the tags box breaks the sentence being typed; this lets
+// the tags go in with it and be filed where they belong. Only whole words
+// after a space or at the start, so "C#" or "issue #42" keep their hash.
+const TITLE_TAG = /(^|\s)#([A-Za-z][\w-]*)/g;
+
+function splitTitleTags(title, tags) {
+  const found = [...title.matchAll(TITLE_TAG)].map((match) => match[2]);
+  if (found.length === 0) return { title, tags };
+
+  const rest = title.replace(TITLE_TAG, '$1').replace(/\s{2,}/g, ' ').trim();
+  // A title that was nothing but tags stays as typed rather than vanishing.
+  if (!rest) return { title, tags };
+
+  return { title: rest, tags: [tags.trim(), ...found].filter(Boolean).join(', ') };
+}
+
 function loadDraft() {
   try {
     const saved = JSON.parse(sessionStorage.getItem(DRAFT_KEY));
@@ -155,8 +172,9 @@ const Tasks = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
+    const split = splitTitleTags(title, tags);
     addTask({
-      title,
+      title: split.title,
       status: 'Pending',
       priority,                                      // drives Calendar colours and the urgent count
       // The local day, like every other date this app writes. toISOString()
@@ -164,7 +182,7 @@ const Tasks = () => {
       // as tomorrow's east of Greenwich and this morning's west of it.
       date: new Date().toLocaleDateString('en-CA'), // created date
       deadline: deadline || null,                    // due date, shown on Calendar
-      tags,                                          // cleaned and capped by the context
+      tags: split.tags,                              // cleaned and capped by the context
       repeat,                                        // standing work comes back when it is ticked off
     });
     resetForm();
@@ -179,7 +197,7 @@ const Tasks = () => {
             type="text"
             ref={titleRef}
             placeholder="Initialize a new objective..."
-            title="Press N to jump here"
+            title="Press N to jump here · #words become tags"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
