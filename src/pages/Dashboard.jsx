@@ -28,6 +28,11 @@ const Dashboard = () => {
   // sits one card to the left. Rounded down so 99.6% never reads as all done.
   const completedShare = total === 0 ? null : Math.floor((completed / total) * 100);
   const urgent = tasks.filter(t => t.priority === 'High' && t.status !== 'Completed').length;
+  // Of the urgent ones, those already past their date - the part of the
+  // count that has stopped being a warning and become a miss.
+  const urgentLate = tasks.filter(
+    t => t.priority === 'High' && t.status !== 'Completed' && t.deadline && t.deadline < today
+  ).length;
   const notes = useMemo(() => buildBriefing(tasks), [tasks]);
   // Pinning says "this one, today". The table honours that by floating
   // pinned rows to the top — but the dashboard is the page people actually
@@ -128,6 +133,9 @@ const Dashboard = () => {
           <div>
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Urgent Gates</p>
             <p className="text-2xl font-bold font-mono mt-0.5 text-rose-500">{urgent}</p>
+            {urgentLate > 0 && (
+              <p className="text-[11px] font-mono text-slate-400">{urgentLate} overdue</p>
+            )}
           </div>
         </Card>
       </div>
