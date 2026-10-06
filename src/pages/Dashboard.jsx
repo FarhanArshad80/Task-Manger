@@ -24,6 +24,9 @@ const Dashboard = () => {
   const total = tasks.length;
   const completed = tasks.filter(t => t.status === 'Completed').length;
   const active = tasks.filter(t => t.status === 'In Progress').length;
+  // Of the work under way, what has to land before the day is out - the
+  // part of the run that decides what to pick up next.
+  const activeDueToday = tasks.filter(t => t.status === 'In Progress' && t.deadline === today).length;
   // The count alone says nothing until it is set against the total, which
   // sits one card to the left. Rounded down so 99.6% never reads as all done.
   const completedShare = total === 0 ? null : Math.floor((completed / total) * 100);
@@ -126,6 +129,9 @@ const Dashboard = () => {
           <div>
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Run</p>
             <p className="text-2xl font-bold font-mono mt-0.5 text-amber-500">{active}</p>
+            {activeDueToday > 0 && (
+              <p className="text-[11px] font-mono text-slate-400">{activeDueToday} due today</p>
+            )}
           </div>
         </Card>
         <Card className="flex items-center space-x-4">
