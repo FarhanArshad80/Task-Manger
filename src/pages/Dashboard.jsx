@@ -23,6 +23,9 @@ const Dashboard = () => {
 
   const total = tasks.length;
   const completed = tasks.filter(t => t.status === 'Completed').length;
+  // The total mixes done, doing and untouched; the untouched part is the
+  // backlog nobody has picked up yet.
+  const notStarted = tasks.filter(t => t.status === 'Pending').length;
   const active = tasks.filter(t => t.status === 'In Progress').length;
   // Of the work under way, what has to land before the day is out - the
   // part of the run that decides what to pick up next.
@@ -112,6 +115,9 @@ const Dashboard = () => {
           <div>
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Actions</p>
             <p className="text-2xl font-bold font-mono mt-0.5">{total}</p>
+            {notStarted > 0 && (
+              <p className="text-[11px] font-mono text-slate-400">{notStarted} not started</p>
+            )}
           </div>
         </Card>
         <Card className="flex items-center space-x-4">
