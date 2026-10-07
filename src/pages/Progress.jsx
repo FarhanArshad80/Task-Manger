@@ -124,6 +124,19 @@ const Progress = () => {
               <span className="font-bold font-mono text-slate-700 dark:text-slate-200">{pace.thisWeek}</span>
               {` ${pace.thisWeek === 1 ? 'task' : 'tasks'} finished in the last 7 days`}
               {` · ${pace.lastWeek} the week before`}
+              {/* The two counts side by side still leave the subtraction
+                  to the reader; which way the week went is the point. */}
+              {pace.thisWeek !== pace.lastWeek && (
+                <span
+                  className={`font-bold ${
+                    pace.thisWeek > pace.lastWeek ? 'text-emerald-500' : 'text-rose-500'
+                  }`}
+                >
+                  {` · ${pace.thisWeek > pace.lastWeek ? 'up' : 'down'} ${Math.abs(
+                    pace.thisWeek - pace.lastWeek
+                  )}`}
+                </span>
+              )}
             </p>
           )}
           {peakDay && (
