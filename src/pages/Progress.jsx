@@ -19,7 +19,18 @@ const GOAL_CARDS = [
     read: (tasks) => {
       const rate = deliveryRate(tasks);
 
-      return rate && { pct: rate.pct, text: `${rate.done} of ${rate.total} tasks finished.` };
+      // What is still to do, said outright: it is the number the next
+      // decision is made on, and the bar only shows it as an empty stretch.
+      const left = rate && rate.total - rate.done;
+
+      return (
+        rate && {
+          pct: rate.pct,
+          text: `${rate.done} of ${rate.total} tasks finished${
+            left > 0 ? ` · ${left} to go` : ''
+          }.`,
+        }
+      );
     },
     blank: 'Nothing on the board yet.',
   },
