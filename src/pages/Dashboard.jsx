@@ -48,6 +48,7 @@ const Dashboard = () => {
     () => tasks.filter((task) => task.pinned && task.status !== 'Completed'),
     [tasks]
   );
+  const pinnedLate = pinned.filter((task) => task.deadline && task.deadline < today).length;
 
   return (
     <div className="space-y-6">
@@ -65,6 +66,11 @@ const Dashboard = () => {
               <h3 className="text-base font-bold">Today's focus</h3>
               <p className="text-xs text-slate-400">
                 The {pinned.length === 1 ? 'task' : `${pinned.length} tasks`} you pinned.
+                {/* Counted up here as well as marked on each row, so a long
+                    focus list says at a glance whether any of it has slipped. */}
+                {pinnedLate > 0 && (
+                  <span className="font-semibold text-rose-500"> {pinnedLate} overdue.</span>
+                )}
               </p>
             </div>
             <Pin className="h-5 w-5 text-amber-500" />
