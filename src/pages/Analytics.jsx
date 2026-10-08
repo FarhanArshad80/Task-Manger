@@ -184,7 +184,14 @@ const Analytics = () => {
             <div>
               <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wide">Task Distribution</h4>
               <p className="text-lg font-bold mt-0.5">{statusBreakdown.length} status types</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">See breakdown table below</p>
+              {/* There is no table below; the useful line is which status
+                  most of the board is sitting in. statusBreakdown is already
+                  sorted by count, so the first row is it. */}
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {total === 0
+                  ? 'No tasks on the board yet'
+                  : `Most are ${statusBreakdown[0].status} · ${statusBreakdown[0].count} of ${total}`}
+              </p>
             </div>
           </Card>
 
