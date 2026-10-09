@@ -46,7 +46,11 @@ const GOAL_CARDS = [
       return (
         rate && {
           pct: rate.pct,
-          text: `${rate.onTime} of ${rate.judged} finished on or before the deadline.`,
+          // The misses counted outright, the same way Delivered says what
+          // is left: it is the number that says whether to plan with more slack.
+          text: `${rate.onTime} of ${rate.judged} finished on or before the deadline${
+            rate.judged > rate.onTime ? ` · ${rate.judged - rate.onTime} late` : ''
+          }.`,
         }
       );
     },
