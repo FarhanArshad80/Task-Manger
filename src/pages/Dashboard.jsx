@@ -33,6 +33,9 @@ const Dashboard = () => {
   // The count alone says nothing until it is set against the total, which
   // sits one card to the left. Rounded down so 99.6% never reads as all done.
   const completedShare = total === 0 ? null : Math.floor((completed / total) * 100);
+  // The all-time count barely moves from one day to the next; what was
+  // finished today is the part of it that says how the day is going.
+  const completedToday = tasks.filter(t => t.status === 'Completed' && t.completedAt === today).length;
   const urgent = tasks.filter(t => t.priority === 'High' && t.status !== 'Completed').length;
   // Of the urgent ones, those already past their date - the part of the
   // count that has stopped being a warning and become a miss.
@@ -133,6 +136,9 @@ const Dashboard = () => {
             <p className="text-2xl font-bold font-mono mt-0.5 text-emerald-500">{completed}</p>
             {completedShare !== null && (
               <p className="text-[11px] font-mono text-slate-400">{completedShare}% of all tasks</p>
+            )}
+            {completedToday > 0 && (
+              <p className="text-[11px] font-mono text-slate-400">{completedToday} today</p>
             )}
           </div>
         </Card>
