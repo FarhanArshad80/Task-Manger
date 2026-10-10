@@ -127,7 +127,13 @@ const Progress = () => {
                   ? streak.lastDay
                     ? `No run right now — last finished on ${streak.lastDay}`
                     : 'Finish a task to start a run'
-                  : `Consecutive days finishing work · best ${streak.best}`}
+                  : `Consecutive days finishing work · ${
+                      // The gap to the record is the reason to keep going
+                      // tomorrow, so it is said rather than left to subtract.
+                      streak.days >= streak.best
+                        ? 'your best run yet'
+                        : `best ${streak.best}, ${streak.best - streak.days + 1} more to beat it`
+                    }`}
               </p>
             </div>
           </div>
