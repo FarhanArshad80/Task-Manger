@@ -290,6 +290,10 @@ const Calendar = () => {
             <h2 className="text-base font-bold">{dayLabel(selectedKey)}</h2>
             <span className="text-xs text-slate-400">
               {selectedTasks.length} task{selectedTasks.length === 1 ? '' : 's'}
+              {/* How much of the day is already dealt with, so the list
+                  does not have to be scanned for strike-throughs. */}
+              {selectedTasks.length > 0 &&
+                ` · ${selectedTasks.filter((task) => (task.status || '').toLowerCase() === 'completed').length} done`}
             </span>
           </div>
 
