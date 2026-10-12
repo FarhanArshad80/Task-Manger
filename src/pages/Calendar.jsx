@@ -203,7 +203,21 @@ const Calendar = () => {
           <button onClick={goToPrevMonth} title="Previous month (Left arrow)" aria-label="Previous month" className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded">
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <span className="text-xs font-bold px-3 font-mono">{monthLabel}</span>
+          {/* How busy the month is as a whole, without counting cells. Keys
+              are YYYY-MM-DD, so the month's own prefix picks them out. */}
+          <span
+            className="text-xs font-bold px-3 font-mono"
+            title={(() => {
+              const prefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
+              const due = Object.entries(tasksByDate)
+                .filter(([key]) => key.startsWith(prefix))
+                .reduce((sum, [, list]) => sum + list.length, 0);
+
+              return `${due} task${due === 1 ? '' : 's'} due this month`;
+            })()}
+          >
+            {monthLabel}
+          </span>
           <button onClick={goToNextMonth} title="Next month (Right arrow)" aria-label="Next month" className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded">
             <ChevronRight className="h-4 w-4" />
           </button>
