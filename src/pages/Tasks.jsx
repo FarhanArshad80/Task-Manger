@@ -290,6 +290,20 @@ const Tasks = () => {
             "{existing.title}" is already on the board ({(existing.status || 'Pending').toLowerCase()}).
           </p>
         )}
+        {/* Picking a day is picking a load. How much is already on it is
+            the thing that decides whether this one should go there or a day
+            either side. */}
+        {deadline && deadline >= todayKey() && (() => {
+          const sameDay = tasks.filter(
+            (task) => task.deadline === deadline && task.status !== 'Completed'
+          ).length;
+
+          return sameDay > 0 ? (
+            <p role="status" className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              {sameDay} unfinished {sameDay === 1 ? 'task is' : 'tasks are'} already due that day.
+            </p>
+          ) : null;
+        })()}
         {deadline && deadline < todayKey() && (
           <p role="status" className="mt-2 text-xs text-amber-600 dark:text-amber-400">
             That date has already passed — this task will start out overdue.
