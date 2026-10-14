@@ -123,7 +123,14 @@ const Dashboard = () => {
           <div className="p-3 rounded-lg bg-indigo-500/10 text-indigo-500"><Zap className="h-6 w-6" /></div>
           <div>
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Actions</p>
-            <p className="text-2xl font-bold font-mono mt-0.5">{total}</p>
+            {/* The other three cards each take one slice of this number;
+                hovering it shows all the slices side by side. */}
+            <p
+              className="text-2xl font-bold font-mono mt-0.5"
+              title={`${notStarted} pending · ${active} in progress · ${completed} completed`}
+            >
+              {total}
+            </p>
             {notStarted > 0 && (
               <p className="text-[11px] font-mono text-slate-400">{notStarted} not started</p>
             )}
