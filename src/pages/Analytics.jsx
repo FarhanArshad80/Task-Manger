@@ -380,6 +380,11 @@ const Analytics = () => {
                       ) : (
                         `#${row.tag}`
                       )}
+                      {/* A finished project is worth calling out; otherwise
+                          it reads as just another full bar in the list. */}
+                      {row.total > 0 && row.done === row.total && (
+                        <span className="ml-2 text-xs font-semibold text-emerald-500">all done</span>
+                      )}
                     </td>
                     <td className="py-2 pr-4">
                       <div className="flex items-center gap-3">
