@@ -383,7 +383,12 @@ const Analytics = () => {
                     </td>
                     <td className="py-2 pr-4">
                       <div className="flex items-center gap-3">
-                        <div className="h-2 flex-1 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                        {/* The bar is a shape to compare at a glance; hovering
+                            gives the figure behind it. */}
+                        <div
+                          className="h-2 flex-1 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800"
+                          title={`${row.pct}% done`}
+                        >
                           <div
                             className="h-full bg-emerald-500"
                             style={{ width: `${row.pct}%` }}
