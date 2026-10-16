@@ -285,7 +285,14 @@ const Calendar = () => {
                       </div>
                     ))}
                     {dayTasks.length > 2 && (
-                      <div className="text-[9px] text-slate-400 pl-1">+{dayTasks.length - 2} more</div>
+                      // The cell only has room for two titles; hovering the
+                      // count names the rest without opening the day.
+                      <div
+                        className="text-[9px] text-slate-400 pl-1"
+                        title={dayTasks.slice(2).map((task) => task.title).join('\n')}
+                      >
+                        +{dayTasks.length - 2} more
+                      </div>
                     )}
                   </div>
                 </button>
