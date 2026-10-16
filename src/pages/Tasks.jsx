@@ -259,7 +259,16 @@ const Tasks = () => {
                 type="button"
                 aria-pressed={on}
                 onClick={() => setDeadline(on ? '' : value)}
-                title={value}
+                // "2026-10-17" has to be decoded; the weekday and date are
+                // what somebody checking "which Friday?" is looking for.
+                title={(() => {
+                  const [y, m, d] = value.split('-').map(Number);
+                  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                  });
+                })()}
                 className={`px-2.5 py-1 rounded-full border text-xs transition-colors ${
                   on
                     ? 'border-indigo-500 bg-indigo-500/10 text-indigo-500'
