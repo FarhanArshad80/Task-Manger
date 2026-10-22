@@ -101,7 +101,23 @@ const Dashboard = () => {
                     <CheckCircle2 className="h-5 w-5" />
                   </button>
 
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{task.title}</span>
+                  {/* The row cuts long titles short, and the deadline is
+                      only shown here once it has slipped. */}
+                  <span
+                    className="min-w-0 flex-1 truncate text-sm font-medium"
+                    title={(() => {
+                      if (!task.deadline) return task.title;
+                      const [y, m, d] = task.deadline.split('-').map(Number);
+                      const due = new Date(y, m - 1, d).toLocaleDateString(undefined, {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'short',
+                      });
+                      return `${task.title} · due ${due}`;
+                    })()}
+                  >
+                    {task.title}
+                  </span>
 
                   {/* Only when it is late. A due date on every row would be a
                       column; a date on the one that has slipped is a warning. */}
