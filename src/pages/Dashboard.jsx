@@ -188,7 +188,20 @@ const Dashboard = () => {
           <div className="p-3 rounded-lg bg-rose-500/10 text-rose-500"><AlertCircle className="h-6 w-6" /></div>
           <div>
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Urgent Gates</p>
-            <p className="text-2xl font-bold font-mono mt-0.5 text-rose-500">{urgent}</p>
+            {/* A count of urgent work begs the question of which work. */}
+            <p
+              className="text-2xl font-bold font-mono mt-0.5 text-rose-500"
+              title={
+                urgent > 0
+                  ? tasks
+                      .filter(t => t.priority === 'High' && t.status !== 'Completed')
+                      .map(t => t.title)
+                      .join('\n')
+                  : 'Nothing high priority left open'
+              }
+            >
+              {urgent}
+            </p>
             {urgentLate > 0 && (
               <p className="text-[11px] font-mono text-slate-400">{urgentLate} overdue</p>
             )}
