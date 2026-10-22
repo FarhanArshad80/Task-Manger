@@ -122,7 +122,16 @@ const Dashboard = () => {
                   {/* Only when it is late. A due date on every row would be a
                       column; a date on the one that has slipped is a warning. */}
                   {late && (
-                    <span className="shrink-0 font-mono text-xs font-semibold text-rose-500">
+                    <span
+                      className="shrink-0 font-mono text-xs font-semibold text-rose-500"
+                      // "Overdue" covers yesterday and last month alike.
+                      title={(() => {
+                        const [y, m, d] = task.deadline.split('-').map(Number);
+                        const [ty, tm, td] = today.split('-').map(Number);
+                        const days = Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(y, m - 1, d)) / 86400000);
+                        return `${days} day${days === 1 ? '' : 's'} late`;
+                      })()}
+                    >
                       overdue
                     </span>
                   )}
