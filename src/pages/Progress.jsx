@@ -168,7 +168,12 @@ const Progress = () => {
           {peakDay && (
             <p className={`${pace ? 'mt-1' : 'mt-4'} text-xs text-slate-500 dark:text-slate-400`}>
               {'Most work gets finished on '}
-              <span className="font-bold text-slate-700 dark:text-slate-200">{peakDay.day}s</span>
+              <span
+                className="font-bold text-slate-700 dark:text-slate-200"
+                title={`${Math.round((peakDay.count / peakDay.total) * 100)}% of all finished work`}
+              >
+                {peakDay.day}s
+              </span>
               {` · ${peakDay.count} of ${peakDay.total}`}
             </p>
           )}
