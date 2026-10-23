@@ -200,7 +200,10 @@ const Progress = () => {
             <div className={tone}><Icon className="h-5 w-5" /></div>
             <div className="flex items-baseline justify-between">
               <h4 className="text-sm font-bold">{title}</h4>
-              <span className="text-sm font-bold font-mono text-slate-400">
+              <span
+                className="text-sm font-bold font-mono text-slate-400"
+                title={result ? (result.pct >= 100 ? 'Fully met' : `${100 - result.pct} points short of 100%`) : undefined}
+              >
                 {result ? `${result.pct}%` : '—'}
               </span>
             </div>
