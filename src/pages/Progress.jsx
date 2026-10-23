@@ -180,7 +180,11 @@ const Progress = () => {
           {wait && (
             <p className={`${pace || peakDay ? 'mt-1' : 'mt-4'} text-xs text-slate-500 dark:text-slate-400`}>
               {'Finished work usually takes '}
-              <span className="font-bold text-slate-700 dark:text-slate-200">
+              {/* "Median" is a word plenty of people skip over. */}
+              <span
+                className="font-bold text-slate-700 dark:text-slate-200"
+                title={`Half of the ${wait.count} finished tasks took this long or less`}
+              >
                 {wait.days === 0 ? 'under a day' : `${wait.days} ${wait.days === 1 ? 'day' : 'days'}`}
               </span>
               {` from being added · median of ${wait.count}`}
