@@ -142,7 +142,12 @@ const Progress = () => {
               beside it to read it against. */}
           {pace && (
             <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
-              <span className="font-bold font-mono text-slate-700 dark:text-slate-200">{pace.thisWeek}</span>
+              <span
+                className="font-bold font-mono text-slate-700 dark:text-slate-200"
+                title={`About ${(pace.thisWeek / 7).toFixed(1)} a day`}
+              >
+                {pace.thisWeek}
+              </span>
               {` ${pace.thisWeek === 1 ? 'task' : 'tasks'} finished in the last 7 days`}
               {` · ${pace.lastWeek} the week before`}
               {/* The two counts side by side still leave the subtraction
