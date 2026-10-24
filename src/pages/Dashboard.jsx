@@ -178,7 +178,18 @@ const Dashboard = () => {
           <div className="p-3 rounded-lg bg-amber-500/10 text-amber-500"><Clock className="h-6 w-6" /></div>
           <div>
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Run</p>
-            <p className="text-2xl font-bold font-mono mt-0.5 text-amber-500">{active}</p>
+            {/* As with the urgent count: the number is the prompt, the
+                names are the answer. */}
+            <p
+              className="text-2xl font-bold font-mono mt-0.5 text-amber-500"
+              title={
+                active > 0
+                  ? tasks.filter(t => t.status === 'In Progress').map(t => t.title).join('\n')
+                  : 'Nothing in progress'
+              }
+            >
+              {active}
+            </p>
             {activeDueToday > 0 && (
               <p className="text-[11px] font-mono text-slate-400">{activeDueToday} due today</p>
             )}
