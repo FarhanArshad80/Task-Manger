@@ -18,9 +18,21 @@ const ProgressChart = () => {
         <span className="font-mono">{getPercent(completed)}% Combined</span>
       </div>
       <div className="h-3 w-full bg-slate-100 dark:bg-slate-700 rounded-full flex overflow-hidden">
-        <div style={{ width: `${getPercent(completed)}%` }} className="bg-emerald-500 transition-all duration-500" />
-        <div style={{ width: `${getPercent(inProgress)}%` }} className="bg-amber-500 transition-all duration-500" />
-        <div style={{ width: `${getPercent(pending)}%` }} className="bg-rose-500 transition-all duration-500" />
+        <div
+          style={{ width: `${getPercent(completed)}%` }}
+          className="bg-emerald-500 transition-all duration-500"
+          title={`Done: ${completed} task${completed === 1 ? '' : 's'} (${getPercent(completed)}%)`}
+        />
+        <div
+          style={{ width: `${getPercent(inProgress)}%` }}
+          className="bg-amber-500 transition-all duration-500"
+          title={`Active: ${inProgress} task${inProgress === 1 ? '' : 's'} (${getPercent(inProgress)}%)`}
+        />
+        <div
+          style={{ width: `${getPercent(pending)}%` }}
+          className="bg-rose-500 transition-all duration-500"
+          title={`Stalled: ${pending} task${pending === 1 ? '' : 's'} (${getPercent(pending)}%)`}
+        />
       </div>
       <div className="grid grid-cols-3 gap-2 pt-2 text-xs">
         <div className="flex items-center space-x-1.5 text-slate-500">
