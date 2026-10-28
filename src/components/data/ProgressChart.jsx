@@ -15,7 +15,7 @@ const ProgressChart = () => {
     <div className="space-y-4">
       <div className="flex items-center justify-between text-sm font-medium mb-1">
         <span>Completion Breakdown</span>
-        <span className="font-mono">{getPercent(completed)}% Combined</span>
+        <span className="font-mono">{getPercent(completed)}% done</span>
       </div>
       <div className="h-3 w-full bg-slate-100 dark:bg-slate-700 rounded-full flex overflow-hidden">
         <div
