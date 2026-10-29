@@ -65,7 +65,11 @@ const DonutChart = ({ segments, centerLabel, centerSubLabel, size = 200, strokeW
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
-  let cumulativePct = 0;
+  // Where each segment starts, worked out before rendering rather than by
+  // a counter bumped inside the map, so a re-render cannot drift it.
+  const starts = segments.map((_, i) =>
+    segments.slice(0, i).reduce((sum, seg) => sum + seg.pct, 0)
+  );
 
   return (
     <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
@@ -83,8 +87,7 @@ const DonutChart = ({ segments, centerLabel, centerSubLabel, size = 200, strokeW
         {segments.map((seg, i) => {
           const dash = (seg.pct / 100) * circumference;
           const gap = circumference - dash;
-          const offset = -((cumulativePct / 100) * circumference);
-          cumulativePct += seg.pct;
+          const offset = -((starts[i] / 100) * circumference);
           return (
             <circle
               key={i}
