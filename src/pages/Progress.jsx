@@ -80,7 +80,6 @@ const GOAL_CARDS = [
 
 const Progress = () => {
   const { tasks } = useContext(AppContext);
-  const completedCount = tasks.filter(t => t.status === 'Completed').length;
   const streak = useMemo(() => completionStreak(tasks), [tasks]);
   const pace = useMemo(() => weeklyPace(tasks), [tasks]);
   const peakDay = useMemo(() => busiestWeekday(tasks), [tasks]);
