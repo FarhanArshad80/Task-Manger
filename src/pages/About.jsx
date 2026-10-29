@@ -1,7 +1,7 @@
 import React from 'react';
 import Card from '../components/ui/Card';
 import {
-  BookOpen, Terminal, Code2, Layers, LayoutGrid, CheckSquare,
+  BookOpen, Code2, Layers, LayoutGrid, CheckSquare,
   Calendar, BarChart3, TrendingUp, Sparkles, Quote, Zap, Activity
 } from 'lucide-react';
 
