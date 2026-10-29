@@ -72,7 +72,7 @@ export function csvFilename(date = new Date()) {
 // A BOM so Excel reads the file as UTF-8 rather than guessing at the local
 // codepage and turning every accent into mojibake.
 export function downloadCsv(text, filename) {
-  const blob = new Blob([`﻿${text}`], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob([`\uFEFF${text}`], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
 
