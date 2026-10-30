@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { sidebarLinks } from '../../config/sidebarNav';
 import { AppContext } from '../../context/AppContext';
 import { todayKey } from '../../utils/streak';
-import { countOverdue } from '../../utils/overdue';
+import { listOverdue, taskNamesText } from '../../utils/overdue';
 
 // Late work was only ever visible from inside the task table, as red rows
 // among everything else - and only once somebody had gone there to look.
@@ -13,7 +13,8 @@ import { countOverdue } from '../../utils/overdue';
 const Sidebar = () => {
   const { tasks } = useContext(AppContext);
   const today = todayKey();
-  const overdue = countOverdue(tasks, today);
+  const overdueTasks = listOverdue(tasks, today);
+  const overdue = overdueTasks.length;
   // What is due today and still open. The overdue badge says what has
   // already slipped; this is what will slip tonight if nothing happens, and
   // it belongs on the calendar link because that is the page organised by
@@ -52,7 +53,7 @@ const Sidebar = () => {
                 {link.path === '/tasks' && overdue > 0 && (
                   <span
                     className="ml-auto rounded-full bg-rose-500/15 px-2 py-0.5 font-mono text-[11px] font-semibold text-rose-500"
-                    title={`${overdue} overdue`}
+                    title={`${overdue} overdue:\n${taskNamesText(overdueTasks)}`}
                     aria-label={`${overdue} overdue`}
                   >
                     {overdue}
