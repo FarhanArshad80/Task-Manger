@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from 'react';
+import { useContext, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Sun, Moon } from 'lucide-react';
 import { AppContext } from '../../context/AppContext';

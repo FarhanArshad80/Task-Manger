@@ -1,4 +1,3 @@
-import React from 'react';
 
 const Badge = ({ variant = 'default', children }) => {
   const base = 'px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide inline-flex items-center';

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Undo2, X } from 'lucide-react';
 import { AppContext } from '../../context/AppContext';
 

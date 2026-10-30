@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Compass, ArrowLeft } from 'lucide-react';
 import Card from '../components/ui/Card';

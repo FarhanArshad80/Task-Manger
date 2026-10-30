@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from 'react';
+import { useContext, useMemo } from 'react';
 import Card from '../components/ui/Card';
 import ProgressChart from '../components/data/ProgressChart';
 import TaskTable from '../components/data/TaskTable';

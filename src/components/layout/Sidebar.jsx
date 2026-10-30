@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import { useContext } from 'react';
 import { NavLink } from 'react-router-dom';
 import { sidebarLinks } from '../../config/sidebarNav';
 import { AppContext } from '../../context/AppContext';

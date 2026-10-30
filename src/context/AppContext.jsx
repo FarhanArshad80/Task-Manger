@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect } from 'react';
 import { normalizeTags } from '../utils/tags';
 import { isRepeating, normalizeRepeat, nextOccurrence, REPEAT_NONE } from '../utils/recurrence';
 import { makeStep, normalizeSteps, resetSteps } from '../utils/steps';
