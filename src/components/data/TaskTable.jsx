@@ -849,6 +849,7 @@ const TaskTable = () => {
           <button
             type="button"
             onClick={deleteSelected}
+            title={`Delete the ${selected.size} selected · you can undo straight after`}
             className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-rose-500 transition-colors hover:bg-rose-500/10"
           >
             <Trash2 className="h-3.5 w-3.5" />
