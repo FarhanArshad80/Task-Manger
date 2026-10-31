@@ -228,6 +228,7 @@ const Calendar = () => {
             type="button"
             onClick={goToToday}
             disabled={onToday}
+            title={onToday ? 'Already showing today' : 'Jump back to this month and select today'}
             className="text-xs font-semibold px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-transparent"
           >
             Today
