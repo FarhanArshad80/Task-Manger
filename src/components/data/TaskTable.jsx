@@ -277,11 +277,10 @@ const TaskTable = () => {
   // A tag can go out of use entirely — the last task carrying it is deleted
   // or retagged — and a filter pinned to a tag nothing has leaves an empty
   // table with no visible control explaining why.
-  useEffect(() => {
-    if (tagFilter !== ALL && !availableTags.some((t) => t.toLowerCase() === tagFilter.toLowerCase())) {
-      setTagFilter(ALL);
-    }
-  }, [availableTags, tagFilter]);
+  // Corrected during render so the empty table is never drawn first.
+  if (tagFilter !== ALL && !availableTags.some((t) => t.toLowerCase() === tagFilter.toLowerCase())) {
+    setTagFilter(ALL);
+  }
 
   // A task saved before the priority picker existed has none of its own;
   // the table already reads those as Medium, so the filter must agree.
