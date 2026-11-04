@@ -357,16 +357,14 @@ const TaskTable = () => {
   // rows that scrolled out of the result set is the kind of surprise a bulk
   // delete cannot be talked out of afterwards, so narrowing the filter drops
   // anything it hides rather than carrying it along invisibly.
-  useEffect(() => {
-    setSelected((current) => {
-      if (current.size === 0) return current;
+  // Pruned during render, so a bulk action can never see a selection that
+  // still includes rows the new filter just hid.
+  if (selected.size > 0) {
+    const visible = new Set(visibleTasks.map((task) => task.id));
+    const kept = [...selected].filter((id) => visible.has(id));
 
-      const visible = new Set(visibleTasks.map((task) => task.id));
-      const kept = [...current].filter((id) => visible.has(id));
-
-      return kept.length === current.size ? current : new Set(kept);
-    });
-  }, [visibleTasks]);
+    if (kept.length !== selected.size) setSelected(new Set(kept));
+  }
 
   const allVisibleSelected =
     sortedTasks.length > 0 && sortedTasks.every((task) => selected.has(task.id));
