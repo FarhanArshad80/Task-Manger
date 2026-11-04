@@ -9,6 +9,14 @@ const WINDOW_MS = 8000;
 const UndoBar = () => {
   const { recentlyDeleted, restoreDeleted, dismissDeleted } = useContext(AppContext);
   const [remaining, setRemaining] = useState(WINDOW_MS);
+  // Which delete the countdown belongs to. A new one resets the window during
+  // render, so the bar never shows a frame of the previous delete's time.
+  const [countingFor, setCountingFor] = useState(recentlyDeleted);
+
+  if (recentlyDeleted !== countingFor) {
+    setCountingFor(recentlyDeleted);
+    setRemaining(WINDOW_MS);
+  }
 
   const count = recentlyDeleted?.entries.length ?? 0;
 
@@ -17,8 +25,6 @@ const UndoBar = () => {
   // a window that is nearly closed.
   useEffect(() => {
     if (!recentlyDeleted) return undefined;
-
-    setRemaining(WINDOW_MS);
 
     const started = Date.now();
     const tick = setInterval(() => {
