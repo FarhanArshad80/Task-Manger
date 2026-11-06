@@ -72,3 +72,35 @@ export function durationText(minutes) {
 
   return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
 }
+
+// Two soft notes when a phase ends. The timer is usually running in a tab
+// nobody is looking at, so the end of a session has to be heard. Made with
+// Web Audio rather than a sound file, so there is nothing to download, and
+// silently skipped where audio is unavailable.
+export function playChime() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+
+    const ctx = new AudioCtx();
+
+    [660, 880].forEach((frequency, index) => {
+      const at = ctx.currentTime + index * 0.25;
+      const tone = ctx.createOscillator();
+      const volume = ctx.createGain();
+
+      tone.type = 'sine';
+      tone.frequency.value = frequency;
+      volume.gain.setValueAtTime(0.0001, at);
+      volume.gain.exponentialRampToValueAtTime(0.2, at + 0.02);
+      volume.gain.exponentialRampToValueAtTime(0.0001, at + 0.6);
+      tone.connect(volume).connect(ctx.destination);
+      tone.start(at);
+      tone.stop(at + 0.65);
+    });
+
+    setTimeout(() => ctx.close(), 1200);
+  } catch {
+    // No sound is better than a broken timer.
+  }
+}

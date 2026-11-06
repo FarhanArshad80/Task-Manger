@@ -3,7 +3,7 @@ import { CheckCircle2, Pause, Play, RotateCcw, SkipForward } from 'lucide-react'
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { AppContext } from '../context/AppContext';
-import { BREAK_MINUTES, FOCUS_CHOICES, FOCUS_MINUTES, clockText } from '../utils/focus';
+import { BREAK_MINUTES, FOCUS_CHOICES, FOCUS_MINUTES, clockText, playChime } from '../utils/focus';
 
 const RING_RADIUS = 46;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
@@ -51,6 +51,7 @@ const Focus = () => {
     // own would run down while somebody finished their sentence.
     const finish = () => {
       setEndsAt(null);
+      playChime();
 
       if (mode === 'focus') {
         if (currentId) logFocus(currentId, focusMinutes);
