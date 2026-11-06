@@ -1,12 +1,15 @@
 import { useContext, useState } from 'react';
 import Card from '../components/ui/Card';
 import { AppContext } from '../context/AppContext';
+import { FOCUS_MINUTES, clockText } from '../utils/focus';
 
 // A timer for working on one task at a time, with the minutes written back
 // onto the task when a session ends.
 const Focus = () => {
   const { tasks } = useContext(AppContext);
   const [taskId, setTaskId] = useState('');
+  // Seconds left on the clock.
+  const [remaining] = useState(FOCUS_MINUTES * 60);
 
   // Only work still to do, pinned rows first - a pin already says "this is
   // what I am on", which is the question this list asks.
@@ -45,6 +48,14 @@ const Focus = () => {
             ))}
           </select>
         </label>
+
+        <p
+          className="font-mono text-7xl font-semibold tabular-nums tracking-tight"
+          role="timer"
+          aria-label={`${clockText(remaining)} left`}
+        >
+          {clockText(remaining)}
+        </p>
       </Card>
     </div>
   );
