@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react';
-import { Pause, Play } from 'lucide-react';
+import { Pause, Play, RotateCcw } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { AppContext } from '../context/AppContext';
@@ -40,6 +40,13 @@ const Focus = () => {
   const pause = () => {
     setRemaining(Math.max(0, (endsAt - Date.now()) / 1000));
     setEndsAt(null);
+  };
+
+  // Back to a full session, nothing recorded. For a session that went wrong
+  // from the start - the phone rang, the wrong task was picked.
+  const reset = () => {
+    setEndsAt(null);
+    setRemaining(FOCUS_MINUTES * 60);
   };
 
   // Only work still to do, pinned rows first - a pin already says "this is
@@ -102,6 +109,14 @@ const Focus = () => {
               <Play className="h-4 w-4" /> Start
             </Button>
           )}
+          <Button
+            onClick={reset}
+            variant="secondary"
+            disabled={!running && remaining === FOCUS_MINUTES * 60}
+            className="flex items-center gap-2"
+          >
+            <RotateCcw className="h-4 w-4" /> Reset
+          </Button>
         </div>
       </Card>
     </div>
