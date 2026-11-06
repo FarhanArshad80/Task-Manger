@@ -195,7 +195,9 @@ export const AppProvider = ({ children }) => {
       // already holds is a no-op everywhere else in the app, and here it
       // would quietly mint a duplicate every time it happened.
       if (newStatus === 'Completed' && task.status !== 'Completed' && isRepeating(task)) {
-        next.push(nextOccurrence(updated, today, createId));
+        // Same reasoning as a duplicate: the next occurrence has had no
+        // time spent on it yet.
+        next.push({ ...nextOccurrence(updated, today, createId), focus: [] });
       }
     }
 
@@ -301,6 +303,9 @@ export const AppProvider = ({ children }) => {
         // was copied from.
         pinned: false,
         tags: [...(source.tags || [])],
+        // Time already spent belongs to the original. A copy starts at zero,
+        // or every duplicate would claim hours nobody put into it.
+        focus: [],
       };
 
       const next = [...prev];
