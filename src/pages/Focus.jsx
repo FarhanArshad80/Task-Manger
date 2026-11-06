@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Pause, Play, RotateCcw, SkipForward } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -142,12 +142,50 @@ const Focus = () => {
     setRemaining(fullSeconds);
   };
 
+  // Space starts and pauses, the way it does in every media player - the
+  // clock is the thing on this page, and reaching for the mouse to pause it
+  // when somebody walks up to the desk is one step too many.
+  //
+  // The listener is added once and always calls the latest version of the
+  // toggle, which changes on every tick.
+  const canStart = mode === 'break' || Boolean(current);
+  const toggleRef = useRef(null);
+
+  useEffect(() => {
+    toggleRef.current = running ? pause : canStart ? start : null;
+  });
+
+  useEffect(() => {
+    const onKey = (event) => {
+      if (event.key !== ' ' || event.ctrlKey || event.metaKey || event.altKey) return;
+
+      // A focused button or field already does something with the space
+      // bar - pressing it there must not also toggle the clock.
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName))
+      ) {
+        return;
+      }
+
+      if (!toggleRef.current) return;
+
+      event.preventDefault();
+      toggleRef.current();
+    };
+
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Focus</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
           Pick a task, start the timer, and the time is saved on the task when the session ends.
+          Press Space to start or pause.
         </p>
       </div>
 
@@ -236,7 +274,7 @@ const Focus = () => {
           ) : (
             // Focus time with no task to put it on would be time thrown
             // away. A break needs no task.
-            <Button onClick={start} disabled={mode === 'focus' && !current} className="flex items-center gap-2">
+            <Button onClick={start} disabled={!canStart} className="flex items-center gap-2">
               <Play className="h-4 w-4" /> Start
             </Button>
           )}
