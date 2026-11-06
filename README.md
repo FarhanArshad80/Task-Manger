@@ -21,6 +21,13 @@ Everything is saved in your browser (`localStorage`), so it needs no account or 
 - Undo after deleting one task or many
 - CSV export of the rows you are viewing, and CSV import
 
+**Focus timer**
+- Pick an open task and run a 15, 25 or 50 minute focus session, followed by a 5 minute break
+- The minutes are saved on the task when the session ends. "Stop & save" keeps the time already spent if you finish early.
+- The clock keeps correct time in a background tab, shows the time left in the tab title, and plays a short chime at the end
+- Press Space to start or pause
+- A "Today" summary shows how much time you focused and which tasks it went on
+
 **Seeing progress**
 - **Dashboard:** key counts, a status chart and notes based on your real tasks (what's overdue, what's due today, high-priority work with no deadline)
 - **Calendar:** tasks on the day they are due. Click a day to see all of its tasks.
