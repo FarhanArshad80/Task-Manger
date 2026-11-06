@@ -67,7 +67,10 @@ const Focus = () => {
           <select
             value={current ? current.id : ''}
             onChange={(event) => setTaskId(event.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            // Switching mid-session would file the whole session under the
+            // second task, including the minutes spent on the first.
+            disabled={running}
+            className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
           >
             <option value="">
               {openTasks.length ? 'Choose a task…' : 'No open tasks - add one on the Tasks page'}
