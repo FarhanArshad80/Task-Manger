@@ -3,6 +3,7 @@ import { normalizeTags } from '../utils/tags';
 import { isRepeating, normalizeRepeat, nextOccurrence, REPEAT_NONE } from '../utils/recurrence';
 import { makeStep, normalizeSteps, resetSteps } from '../utils/steps';
 import { capNote, normalizeNote } from '../utils/notes';
+import { normalizeFocus } from '../utils/focus';
 
 export const AppContext = createContext();
 
@@ -380,6 +381,24 @@ export const AppProvider = ({ children }) => {
     );
   };
 
+  // A finished focus session, written onto the task it was spent on. Whole
+  // minutes only: the timer is a rough measure of effort, not a stopwatch.
+  const logFocus = (taskId, minutes) => {
+    const whole = Math.round(minutes);
+
+    if (!(whole > 0)) return;
+
+    const day = new Date().toLocaleDateString('en-CA');
+
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === taskId
+          ? { ...task, focus: [...normalizeFocus(task.focus), { day, minutes: whole }] }
+          : task
+      )
+    );
+  };
+
   const removeStep = (taskId, stepId) => {
     setTasks((prev) =>
       prev.map((task) =>
@@ -534,6 +553,7 @@ export const AppProvider = ({ children }) => {
         toggleStep,
         removeStep,
         setTaskNote,
+        logFocus,
         updateTaskStatus,
         updateTasksStatus,
         updateTasksPriority,
