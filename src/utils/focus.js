@@ -18,3 +18,53 @@ export function clockText(totalSeconds) {
 
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
+
+const DAY_KEY = /^\d{4}-\d{2}-\d{2}$/;
+
+// Sessions are stored on the task as [{ day: 'YYYY-MM-DD', minutes }].
+// Anything else that turns up there - an import from an older version, a
+// hand-edited file - is dropped rather than allowed to break the sums.
+export function normalizeFocus(input) {
+  if (!Array.isArray(input)) return [];
+
+  return input.filter(
+    (entry) =>
+      entry &&
+      typeof entry.day === 'string' &&
+      DAY_KEY.test(entry.day) &&
+      Number.isFinite(entry.minutes) &&
+      entry.minutes > 0
+  );
+}
+
+// Every minute ever focused on one task.
+export function focusTotal(task) {
+  return normalizeFocus(task?.focus).reduce((sum, entry) => sum + entry.minutes, 0);
+}
+
+// Minutes focused on one day, per task, busiest first. Tasks with nothing
+// that day are left out so the list is only what actually happened.
+export function focusOnDay(tasks, day) {
+  return tasks
+    .map((task) => {
+      const sessions = normalizeFocus(task.focus).filter((entry) => entry.day === day);
+
+      return {
+        task,
+        sessions: sessions.length,
+        minutes: sessions.reduce((sum, entry) => sum + entry.minutes, 0),
+      };
+    })
+    .filter((row) => row.minutes > 0)
+    .sort((a, b) => b.minutes - a.minutes);
+}
+
+// "1h 15m", "40m". Hours only appear once there is a whole one.
+export function durationText(minutes) {
+  const hours = Math.floor(minutes / 60);
+  const rest = Math.round(minutes % 60);
+
+  if (hours === 0) return `${rest}m`;
+
+  return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
+}
