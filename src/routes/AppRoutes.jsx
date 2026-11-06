@@ -3,6 +3,7 @@ import Dashboard from '../pages/Dashboard';
 import Tasks from '../pages/Tasks';
 import Calendar from '../pages/Calendar';
 import Progress from '../pages/Progress';
+import Focus from '../pages/Focus';
 import Analytics from '../pages/Analytics';
 import About from '../pages/About';
 import NotFound from '../pages/NotFound';
@@ -15,6 +16,7 @@ const AppRoutes = () => {
       <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
       <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
       <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
+      <Route path="/focus" element={<ProtectedRoute><Focus /></ProtectedRoute>} />
       <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
       <Route path="/about" element={<ProtectedRoute><About /></ProtectedRoute>} />
       {/* Last, and deliberately outside ProtectedRoute: a wrong address is
