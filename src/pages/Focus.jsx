@@ -3,7 +3,7 @@ import { Pause, Play, RotateCcw } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { AppContext } from '../context/AppContext';
-import { FOCUS_MINUTES, clockText } from '../utils/focus';
+import { BREAK_MINUTES, FOCUS_MINUTES, clockText } from '../utils/focus';
 
 // A timer for working on one task at a time, with the minutes written back
 // onto the task when a session ends.
@@ -22,6 +22,11 @@ const Focus = () => {
   const current = openTasks.find((task) => task.id === taskId) || null;
   const currentId = current ? current.id : null;
 
+  // Work and rest take turns. A break is never recorded against anything:
+  // it is the part of the cycle that is not work.
+  const [mode, setMode] = useState('focus');
+  const fullSeconds = (mode === 'focus' ? FOCUS_MINUTES : BREAK_MINUTES) * 60;
+
   // Seconds left on the clock while it is stopped.
   const [remaining, setRemaining] = useState(FOCUS_MINUTES * 60);
   // When the running session ends, as a timestamp, or null while stopped.
@@ -37,10 +42,20 @@ const Focus = () => {
 
     // Reaching zero is the one moment the session counts. Stopping the clock
     // first also stops this interval, so the session is recorded once.
+    //
+    // The next phase is set up but not started: a break that began on its
+    // own would run down while somebody finished their sentence.
     const finish = () => {
       setEndsAt(null);
-      setRemaining(FOCUS_MINUTES * 60);
-      if (currentId) logFocus(currentId, FOCUS_MINUTES);
+
+      if (mode === 'focus') {
+        if (currentId) logFocus(currentId, FOCUS_MINUTES);
+        setMode('break');
+        setRemaining(BREAK_MINUTES * 60);
+      } else {
+        setMode('focus');
+        setRemaining(FOCUS_MINUTES * 60);
+      }
     };
 
     const tick = setInterval(() => {
@@ -51,7 +66,7 @@ const Focus = () => {
     }, 250);
 
     return () => clearInterval(tick);
-  }, [endsAt, currentId, logFocus]);
+  }, [endsAt, mode, currentId, logFocus]);
 
   const left = running ? Math.max(0, (endsAt - now) / 1000) : remaining;
 
@@ -71,7 +86,7 @@ const Focus = () => {
   // from the start - the phone rang, the wrong task was picked.
   const reset = () => {
     setEndsAt(null);
-    setRemaining(FOCUS_MINUTES * 60);
+    setRemaining(fullSeconds);
   };
 
   return (
@@ -106,6 +121,14 @@ const Focus = () => {
         </label>
 
         <p
+          className={`text-xs font-semibold uppercase tracking-widest ${
+            mode === 'focus' ? 'text-indigo-500' : 'text-emerald-500'
+          }`}
+        >
+          {mode === 'focus' ? 'Focus' : 'Break'}
+        </p>
+
+        <p
           className="font-mono text-7xl font-semibold tabular-nums tracking-tight"
           role="timer"
           aria-label={`${clockText(left)} left`}
@@ -119,15 +142,16 @@ const Focus = () => {
               <Pause className="h-4 w-4" /> Pause
             </Button>
           ) : (
-            // Time with no task to put it on would be time thrown away.
-            <Button onClick={start} disabled={!current} className="flex items-center gap-2">
+            // Focus time with no task to put it on would be time thrown
+            // away. A break needs no task.
+            <Button onClick={start} disabled={mode === 'focus' && !current} className="flex items-center gap-2">
               <Play className="h-4 w-4" /> Start
             </Button>
           )}
           <Button
             onClick={reset}
             variant="secondary"
-            disabled={!running && remaining === FOCUS_MINUTES * 60}
+            disabled={!running && remaining === fullSeconds}
             className="flex items-center gap-2"
           >
             <RotateCcw className="h-4 w-4" /> Reset
