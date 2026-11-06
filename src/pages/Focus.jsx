@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react';
-import { Pause, Play, RotateCcw, SkipForward } from 'lucide-react';
+import { CheckCircle2, Pause, Play, RotateCcw, SkipForward } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { AppContext } from '../context/AppContext';
@@ -71,6 +71,19 @@ const Focus = () => {
 
     return () => clearInterval(tick);
   }, [endsAt, mode, focusMinutes, currentId, logFocus]);
+
+  // The job got done in eighteen minutes, or a meeting is starting. Either
+  // way the time already spent was real and is kept, unlike Reset. Under a
+  // minute there is nothing worth recording.
+  const stopAndSave = () => {
+    const spentLeft = running ? Math.max(0, (endsAt - Date.now()) / 1000) : remaining;
+    const minutes = Math.floor((fullSeconds - spentLeft) / 60);
+
+    if (currentId && minutes >= 1) logFocus(currentId, minutes);
+
+    setEndsAt(null);
+    setRemaining(focusMinutes * 60);
+  };
 
   // For the days when the work is going well and a break would only
   // interrupt it.
@@ -235,6 +248,16 @@ const Focus = () => {
           >
             <RotateCcw className="h-4 w-4" /> Reset
           </Button>
+          {mode === 'focus' && !fresh && (
+            <Button
+              onClick={stopAndSave}
+              variant="secondary"
+              disabled={fullSeconds - left < 60}
+              className="flex items-center gap-2"
+            >
+              <CheckCircle2 className="h-4 w-4" /> Stop &amp; save
+            </Button>
+          )}
           {mode === 'break' && (
             <Button onClick={skipBreak} variant="secondary" className="flex items-center gap-2">
               <SkipForward className="h-4 w-4" /> Skip break
