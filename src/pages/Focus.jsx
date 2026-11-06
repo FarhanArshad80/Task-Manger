@@ -91,6 +91,25 @@ const Focus = () => {
 
   const left = running ? Math.max(0, (endsAt - now) / 1000) : remaining;
 
+  // The tab shows the time left while a session runs, so the clock can be
+  // checked from another tab without coming back to this one. The page's
+  // own title is put back when the clock stops or the page is left.
+  useEffect(() => {
+    if (!running) return undefined;
+
+    const before = document.title;
+
+    return () => {
+      document.title = before;
+    };
+  }, [running]);
+
+  const leftText = clockText(left);
+
+  useEffect(() => {
+    if (running) document.title = `${leftText} ${mode === 'focus' ? 'focus' : 'break'} · MicroGains`;
+  }, [running, leftText, mode]);
+
   const start = () => {
     const at = Date.now();
 
