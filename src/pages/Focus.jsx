@@ -8,8 +8,20 @@ import { FOCUS_MINUTES, clockText } from '../utils/focus';
 // A timer for working on one task at a time, with the minutes written back
 // onto the task when a session ends.
 const Focus = () => {
-  const { tasks } = useContext(AppContext);
+  const { tasks, logFocus } = useContext(AppContext);
   const [taskId, setTaskId] = useState('');
+
+  // Only work still to do, pinned rows first - a pin already says "this is
+  // what I am on", which is the question this list asks.
+  const openTasks = tasks
+    .filter((task) => task.status !== 'Completed')
+    .sort((a, b) => Number(b.pinned === true) - Number(a.pinned === true));
+
+  // A task finished or deleted elsewhere drops out of the choice rather than
+  // leaving the timer pointed at something that is no longer there.
+  const current = openTasks.find((task) => task.id === taskId) || null;
+  const currentId = current ? current.id : null;
+
   // Seconds left on the clock while it is stopped.
   const [remaining, setRemaining] = useState(FOCUS_MINUTES * 60);
   // When the running session ends, as a timestamp, or null while stopped.
@@ -23,10 +35,23 @@ const Focus = () => {
   useEffect(() => {
     if (endsAt === null) return undefined;
 
-    const tick = setInterval(() => setNow(Date.now()), 250);
+    // Reaching zero is the one moment the session counts. Stopping the clock
+    // first also stops this interval, so the session is recorded once.
+    const finish = () => {
+      setEndsAt(null);
+      setRemaining(FOCUS_MINUTES * 60);
+      if (currentId) logFocus(currentId, FOCUS_MINUTES);
+    };
+
+    const tick = setInterval(() => {
+      const at = Date.now();
+
+      setNow(at);
+      if (at >= endsAt) finish();
+    }, 250);
 
     return () => clearInterval(tick);
-  }, [endsAt]);
+  }, [endsAt, currentId, logFocus]);
 
   const left = running ? Math.max(0, (endsAt - now) / 1000) : remaining;
 
@@ -48,16 +73,6 @@ const Focus = () => {
     setEndsAt(null);
     setRemaining(FOCUS_MINUTES * 60);
   };
-
-  // Only work still to do, pinned rows first - a pin already says "this is
-  // what I am on", which is the question this list asks.
-  const openTasks = tasks
-    .filter((task) => task.status !== 'Completed')
-    .sort((a, b) => Number(b.pinned === true) - Number(a.pinned === true));
-
-  // A task finished or deleted elsewhere drops out of the choice rather than
-  // leaving the timer pointed at something that is no longer there.
-  const current = openTasks.find((task) => task.id === taskId) || null;
 
   return (
     <div className="space-y-6">
