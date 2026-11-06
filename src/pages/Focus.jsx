@@ -3,7 +3,7 @@ import { Pause, Play, RotateCcw, SkipForward } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { AppContext } from '../context/AppContext';
-import { BREAK_MINUTES, FOCUS_MINUTES, clockText } from '../utils/focus';
+import { BREAK_MINUTES, FOCUS_CHOICES, FOCUS_MINUTES, clockText } from '../utils/focus';
 
 // A timer for working on one task at a time, with the minutes written back
 // onto the task when a session ends.
@@ -25,7 +25,8 @@ const Focus = () => {
   // Work and rest take turns. A break is never recorded against anything:
   // it is the part of the cycle that is not work.
   const [mode, setMode] = useState('focus');
-  const fullSeconds = (mode === 'focus' ? FOCUS_MINUTES : BREAK_MINUTES) * 60;
+  const [focusMinutes, setFocusMinutes] = useState(FOCUS_MINUTES);
+  const fullSeconds = (mode === 'focus' ? focusMinutes : BREAK_MINUTES) * 60;
 
   // Seconds left on the clock while it is stopped.
   const [remaining, setRemaining] = useState(FOCUS_MINUTES * 60);
@@ -49,12 +50,12 @@ const Focus = () => {
       setEndsAt(null);
 
       if (mode === 'focus') {
-        if (currentId) logFocus(currentId, FOCUS_MINUTES);
+        if (currentId) logFocus(currentId, focusMinutes);
         setMode('break');
         setRemaining(BREAK_MINUTES * 60);
       } else {
         setMode('focus');
-        setRemaining(FOCUS_MINUTES * 60);
+        setRemaining(focusMinutes * 60);
       }
     };
 
@@ -66,14 +67,23 @@ const Focus = () => {
     }, 250);
 
     return () => clearInterval(tick);
-  }, [endsAt, mode, currentId, logFocus]);
+  }, [endsAt, mode, focusMinutes, currentId, logFocus]);
 
   // For the days when the work is going well and a break would only
   // interrupt it.
   const skipBreak = () => {
     setEndsAt(null);
     setMode('focus');
-    setRemaining(FOCUS_MINUTES * 60);
+    setRemaining(focusMinutes * 60);
+  };
+
+  // The length can only change before a session starts. Changing it halfway
+  // would leave no honest answer to how long the session was.
+  const fresh = !running && mode === 'focus' && remaining === fullSeconds;
+
+  const chooseLength = (minutes) => {
+    setFocusMinutes(minutes);
+    setRemaining(minutes * 60);
   };
 
   const left = running ? Math.max(0, (endsAt - now) / 1000) : remaining;
@@ -127,6 +137,25 @@ const Focus = () => {
             ))}
           </select>
         </label>
+
+        <div className="flex gap-2" role="group" aria-label="Session length">
+          {FOCUS_CHOICES.map((minutes) => (
+            <button
+              key={minutes}
+              type="button"
+              onClick={() => chooseLength(minutes)}
+              disabled={!fresh}
+              aria-pressed={focusMinutes === minutes}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                focusMinutes === minutes
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
+              }`}
+            >
+              {minutes} min
+            </button>
+          ))}
+        </div>
 
         <p
           className={`text-xs font-semibold uppercase tracking-widest ${

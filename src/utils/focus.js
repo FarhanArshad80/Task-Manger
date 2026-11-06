@@ -9,6 +9,10 @@
 export const FOCUS_MINUTES = 25;
 export const BREAK_MINUTES = 5;
 
+// Lengths on offer for a focus session. Fifteen for the job that only needs
+// starting, fifty for the deep stretch some work needs before it moves.
+export const FOCUS_CHOICES = [15, 25, 50];
+
 // A countdown as m:ss. Minutes are not padded: "5:00" reads faster than
 // "05:00", and the timer never runs past an hour.
 export function clockText(totalSeconds) {
