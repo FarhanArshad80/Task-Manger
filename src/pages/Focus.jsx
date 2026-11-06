@@ -3,7 +3,17 @@ import { CheckCircle2, Pause, Play, RotateCcw, SkipForward } from 'lucide-react'
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { AppContext } from '../context/AppContext';
-import { BREAK_MINUTES, FOCUS_CHOICES, FOCUS_MINUTES, clockText, playChime } from '../utils/focus';
+import {
+  BREAK_MINUTES,
+  FOCUS_CHOICES,
+  FOCUS_MINUTES,
+  clockText,
+  durationText,
+  focusOnDay,
+  focusTotal,
+  playChime,
+} from '../utils/focus';
+import { todayKey } from '../utils/streak';
 
 const RING_RADIUS = 46;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
@@ -142,6 +152,12 @@ const Focus = () => {
     setEndsAt(null);
     setRemaining(fullSeconds);
   };
+
+  // What today's sessions added up to, and where they went. Completed tasks
+  // count too - finishing something is the best use of focus there is.
+  const today = focusOnDay(tasks, todayKey());
+  const todayMinutes = today.reduce((sum, row) => sum + row.minutes, 0);
+  const todaySessions = today.reduce((sum, row) => sum + row.sessions, 0);
 
   // Space starts and pauses, the way it does in every media player - the
   // clock is the thing on this page, and reaching for the mouse to pause it
@@ -303,6 +319,39 @@ const Focus = () => {
             </Button>
           )}
         </div>
+      </Card>
+
+      <Card>
+        <div className="flex items-baseline justify-between mb-4">
+          <h2 className="text-lg font-semibold">Today</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            {todaySessions === 0
+              ? 'No focus sessions yet'
+              : `${durationText(todayMinutes)} across ${todaySessions} session${todaySessions === 1 ? '' : 's'}`}
+          </p>
+        </div>
+
+        {today.length > 0 && (
+          <ul className="space-y-3">
+            {today.map(({ task, minutes }) => (
+              <li key={task.id} className="text-sm">
+                <div className="flex justify-between gap-4 mb-1">
+                  <span className={`truncate ${task.status === 'Completed' ? 'line-through text-slate-400' : ''}`}>
+                    {task.title}
+                  </span>
+                  {/* All-time total on hover: today's figure answers "what did I
+                      do", the total answers "what has this cost so far". */}
+                  <span className="font-mono text-slate-500 dark:text-slate-400" title={`${durationText(focusTotal(task))} in total`}>
+                    {durationText(minutes)}
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                  <div className="h-full rounded-full bg-indigo-500" style={{ width: `${(minutes / todayMinutes) * 100}%` }} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
     </div>
   );
