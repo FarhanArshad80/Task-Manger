@@ -5,6 +5,9 @@ import Button from '../components/ui/Button';
 import { AppContext } from '../context/AppContext';
 import { BREAK_MINUTES, FOCUS_CHOICES, FOCUS_MINUTES, clockText } from '../utils/focus';
 
+const RING_RADIUS = 46;
+const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
+
 // A timer for working on one task at a time, with the minutes written back
 // onto the task when a session ends.
 const Focus = () => {
@@ -165,13 +168,33 @@ const Focus = () => {
           {mode === 'focus' ? 'Focus' : 'Break'}
         </p>
 
-        <p
-          className="font-mono text-7xl font-semibold tabular-nums tracking-tight"
-          role="timer"
-          aria-label={`${clockText(left)} left`}
-        >
-          {clockText(left)}
-        </p>
+        {/* The ring fills as the session goes, so how far through it is can
+            be read from across the room, without doing sums on the clock. */}
+        <div className="relative h-72 w-72">
+          <svg viewBox="0 0 100 100" className="absolute inset-0 -rotate-90" aria-hidden="true">
+            <circle cx="50" cy="50" r={RING_RADIUS} fill="none" strokeWidth="4" className="stroke-slate-200 dark:stroke-slate-700" />
+            <circle
+              cx="50"
+              cy="50"
+              r={RING_RADIUS}
+              fill="none"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeDasharray={RING_LENGTH}
+              strokeDashoffset={RING_LENGTH * (left / fullSeconds)}
+              className={`transition-[stroke-dashoffset] duration-300 ${
+                mode === 'focus' ? 'stroke-indigo-500' : 'stroke-emerald-500'
+              }`}
+            />
+          </svg>
+          <p
+            className="absolute inset-0 flex items-center justify-center font-mono text-6xl font-semibold tabular-nums tracking-tight"
+            role="timer"
+            aria-label={`${clockText(left)} left`}
+          >
+            {clockText(left)}
+          </p>
+        </div>
 
         <div className="flex gap-3">
           {running ? (
