@@ -72,8 +72,10 @@ src/
 │   ├── data/       # Task table, progress chart
 │   ├── layout/     # Navbar, sidebar
 │   └── ui/         # Card, button, badge, undo bar
+├── config/         # Navbar and sidebar link lists
 ├── context/        # App state and localStorage persistence
-├── pages/          # Dashboard, Tasks, Calendar, Progress, Analytics, About
+├── pages/          # Dashboard, Tasks, Focus, Calendar, Progress, Analytics, About
 ├── routes/         # Route definitions
-└── utils/          # Streaks, goals, recurrence, steps, tags, CSV, briefing
+└── utils/          # Streaks, goals, recurrence, steps, tags, notes, focus,
+                    # due dates, CSV, briefing
 ```
