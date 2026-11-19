@@ -2,7 +2,7 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Pause, Play, RotateCcw, SkipForward } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import { AppContext } from '../context/AppContext';
+import { AppContext } from '../context/appContextObject';
 import {
   BREAK_MINUTES,
   FOCUS_CHOICES,

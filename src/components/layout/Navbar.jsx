@@ -1,7 +1,7 @@
 import { useContext, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Sun, Moon } from 'lucide-react';
-import { AppContext } from '../../context/AppContext';
+import { AppContext } from '../../context/appContextObject';
 import { pageName } from '../../config/sidebarNav';
 import { countOverdue } from '../../utils/overdue';
 import { todayKey } from '../../utils/streak';

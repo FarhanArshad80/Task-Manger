@@ -1,11 +1,10 @@
-import { createContext, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { AppContext } from './appContextObject';
 import { normalizeTags } from '../utils/tags';
 import { isRepeating, normalizeRepeat, nextOccurrence, REPEAT_NONE } from '../utils/recurrence';
 import { makeStep, normalizeSteps, resetSteps } from '../utils/steps';
 import { capNote, normalizeNote } from '../utils/notes';
 import { normalizeFocus } from '../utils/focus';
-
-export const AppContext = createContext();
 
 const TASKS_KEY = 'taskengine.tasks';
 const THEME_KEY = 'taskengine.theme';

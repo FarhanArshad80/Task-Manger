@@ -1,7 +1,7 @@
 import { useContext } from 'react';
 import { NavLink } from 'react-router-dom';
 import { sidebarLinks } from '../../config/sidebarNav';
-import { AppContext } from '../../context/AppContext';
+import { AppContext } from '../../context/appContextObject';
 import { todayKey } from '../../utils/streak';
 import { listOverdue, taskNamesText } from '../../utils/overdue';
 

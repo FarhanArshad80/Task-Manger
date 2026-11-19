@@ -1,7 +1,7 @@
 import { useContext, useMemo } from 'react';
 import Card from '../components/ui/Card';
 import ProgressChart from '../components/data/ProgressChart';
-import { AppContext } from '../context/AppContext';
+import { AppContext } from '../context/appContextObject';
 import { completionStreak } from '../utils/streak';
 import { deliveryRate, onTimeRate, momentumRate, weeklyPace, busiestWeekday, turnaround } from '../utils/goals';
 import { Target, TrendingUp, Award, Flame } from 'lucide-react';

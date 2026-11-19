@@ -1,7 +1,7 @@
 import { useContext, useMemo } from 'react';
 import Card from '../components/ui/Card';
 import { Activity, PieChart, ShieldCheck, ListChecks, Tags, Flag, Hourglass } from 'lucide-react';
-import { AppContext } from '../context/AppContext';
+import { AppContext } from '../context/appContextObject';
 import { tagStats } from '../utils/tags';
 import { todayKey } from '../utils/streak';
 import { openByPriority, oldestOpen } from '../utils/goals';

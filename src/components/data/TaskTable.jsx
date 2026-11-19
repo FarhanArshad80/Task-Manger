@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { AppContext } from '../../context/AppContext';
+import { AppContext } from '../../context/appContextObject';
 import { MAX_TAG_LENGTH, collectTags, hasTag, tagsToText } from '../../utils/tags';
 import { REPEAT_OPTIONS, REPEAT_NONE, normalizeRepeat, repeatLabel } from '../../utils/recurrence';
 import { MAX_STEPS, normalizeSteps, stepProgress } from '../../utils/steps';

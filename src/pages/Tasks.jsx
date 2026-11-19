@@ -2,7 +2,7 @@ import { useState, useContext, useEffect, useRef } from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import TaskTable from '../components/data/TaskTable';
-import { AppContext } from '../context/AppContext';
+import { AppContext } from '../context/appContextObject';
 import { REPEAT_OPTIONS, REPEAT_NONE } from '../utils/recurrence';
 import { shiftDay, todayKey } from '../utils/streak';
 

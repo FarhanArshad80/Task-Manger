@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from 'react';
 import { Undo2, X } from 'lucide-react';
-import { AppContext } from '../../context/AppContext';
+import { AppContext } from '../../context/appContextObject';
 
 // Long enough to notice the mistake and reach the button, short enough that
 // the bar is not still sitting there when the next thing is being typed.

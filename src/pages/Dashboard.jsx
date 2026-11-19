@@ -2,7 +2,7 @@ import { useContext, useMemo } from 'react';
 import Card from '../components/ui/Card';
 import ProgressChart from '../components/data/ProgressChart';
 import TaskTable from '../components/data/TaskTable';
-import { AppContext } from '../context/AppContext';
+import { AppContext } from '../context/appContextObject';
 import { buildBriefing } from '../utils/briefing';
 import { todayKey } from '../utils/streak';
 import { CheckCircle2, Clock, AlertCircle, Zap, Pin } from 'lucide-react';
