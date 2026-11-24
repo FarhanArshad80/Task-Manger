@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* The theme toggle puts a `dark` class on the app wrapper. Tailwind v4
+   ties `dark:` to the OS setting unless told otherwise, so without this the
+   toggle changed the background but none of the dark: utilities. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   body {
     @apply transition-colors duration-200 antialiased font-sans;
